@@ -1,12 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring, Variants } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useRef } from 'react';
 
-const FADE_UP = {
+const FADE_UP: Variants = {
   hidden: { opacity: 0, y: 35, filter: 'blur(4px)' },
   show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { type: "spring", stiffness: 50, damping: 20 } },
 };

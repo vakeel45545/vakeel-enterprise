@@ -68,7 +68,7 @@ export default async function EditNavigationPage({ params }: { params: Promise<{
             </div>
 
             <div className="space-y-2 flex items-center gap-3">
-              <input type="checkbox" id="featured" name="featured" defaultChecked={item.featured} className="w-4 h-4 rounded text-sage border-gray-300 focus:ring-sage/20" />
+              <input type="checkbox" id="featured" name="featured" defaultChecked={item.featured ?? false} className="w-4 h-4 rounded text-sage border-gray-300 focus:ring-sage/20" />
               <label htmlFor="featured" className="text-sm font-semibold text-charcoal m-0">Featured Item (Highlight in menu)</label>
             </div>
 

@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { AccordionItem } from '@/components/ui/accordion';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 
-const FADE_UP = {
+const FADE_UP: Variants = {
   hidden: { opacity: 0, y: 25, filter: 'blur(4px)' },
   show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { type: "spring", stiffness: 50, damping: 20 } },
 };

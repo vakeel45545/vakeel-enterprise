@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion, useScroll, useTransform, useInView, useMotionValue, useSpring } from 'framer-motion';
+import { Variants, motion, useScroll, useTransform, useInView, useMotionValue, useSpring } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { siteConfig } from '@/config/site';
 import { ArrowRight, ShieldCheck, Zap, Scale, Building2, CheckCircle2, TrendingUp, Users, Activity, FileCheck, Clock, BarChart3, Sparkles, Lock, Globe, Server, CheckSquare } from 'lucide-react';
@@ -13,12 +13,12 @@ import { HowItWorks } from '@/components/home/HowItWorks';
 import { Testimonials } from '@/components/home/Testimonials';
 import { supabase } from '@/lib/supabase';
 
-const FADE_UP = {
+const FADE_UP: Variants = {
   hidden: { opacity: 0, y: 30, filter: 'blur(4px)' },
   show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { type: "spring", stiffness: 50, damping: 20 } },
 };
 
-const STAGGER_CONTAINER = {
+const STAGGER_CONTAINER: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.12 } },
 };

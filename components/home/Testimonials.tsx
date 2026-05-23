@@ -1,10 +1,10 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import { ArrowRight, Star, Quote, BadgeCheck } from 'lucide-react';
 import Image from 'next/image';
 
-const FADE_UP = {
+const FADE_UP: Variants = {
   hidden: { opacity: 0, y: 30, filter: 'blur(4px)' },
   show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { type: "spring", stiffness: 50, damping: 20 } },
 };
