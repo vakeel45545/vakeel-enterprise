@@ -7,10 +7,10 @@ import { redirect } from 'next/navigation';
 // --- SERVICES ---
 export async function createService(formData: FormData) {
   const supabase = await verifyAdminAndGetClient();
-  
+
   const title = formData.get('title') as string;
   const slug = formData.get('slug') as string;
-  
+
   const data = {
     title,
     slug,
@@ -22,16 +22,18 @@ export async function createService(formData: FormData) {
     meta_description: formData.get('meta_description') as string || null,
   };
 
-  const { error } = await supabase.from('services').insert(data);
+  const { error } = await supabase
+    .from('services')
+    .insert([data]);
   if (error) throw new Error(error.message);
-  
+
   revalidatePath('/admin/services');
   redirect('/admin/services');
 }
 
 export async function updateService(id: string, formData: FormData) {
   const supabase = await verifyAdminAndGetClient();
-  
+
   const data = {
     title: formData.get('title') as string,
     slug: formData.get('slug') as string,
@@ -46,7 +48,7 @@ export async function updateService(id: string, formData: FormData) {
 
   const { error } = await supabase.from('services').update(data).eq('id', id);
   if (error) throw new Error(error.message);
-  
+
   revalidatePath('/admin/services');
   revalidatePath(`/services/${data.slug}`);
   redirect('/admin/services');
@@ -62,23 +64,23 @@ export async function deleteService(id: string) {
 // --- CITIES ---
 export async function createCity(formData: FormData) {
   const supabase = await verifyAdminAndGetClient();
-  
+
   const data = {
     city_name: formData.get('city_name') as string,
     slug: formData.get('slug') as string,
     state: formData.get('state') as string || null,
   };
 
-  const { error } = await supabase.from('cities').insert(data);
+  const { error } = await supabase.from('cities').insert([data]);
   if (error) throw new Error(error.message);
-  
+
   revalidatePath('/admin/cities');
   redirect('/admin/cities');
 }
 
 export async function updateCity(id: string, formData: FormData) {
   const supabase = await verifyAdminAndGetClient();
-  
+
   const data = {
     city_name: formData.get('city_name') as string,
     slug: formData.get('slug') as string,
@@ -87,7 +89,7 @@ export async function updateCity(id: string, formData: FormData) {
 
   const { error } = await supabase.from('cities').update(data).eq('id', id);
   if (error) throw new Error(error.message);
-  
+
   revalidatePath('/admin/cities');
   redirect('/admin/cities');
 }
@@ -102,7 +104,7 @@ export async function deleteCity(id: string) {
 // --- BLOGS ---
 export async function createBlog(formData: FormData) {
   const supabase = await verifyAdminAndGetClient();
-  
+
   const data = {
     title: formData.get('title') as string,
     slug: formData.get('slug') as string,
@@ -113,16 +115,16 @@ export async function createBlog(formData: FormData) {
     meta_description: formData.get('meta_description') as string || null,
   };
 
-  const { error } = await supabase.from('blogs').insert(data);
+  const { error } = await supabase.from('blogs').insert([data]);
   if (error) throw new Error(error.message);
-  
+
   revalidatePath('/admin/blogs');
   redirect('/admin/blogs');
 }
 
 export async function updateBlog(id: string, formData: FormData) {
   const supabase = await verifyAdminAndGetClient();
-  
+
   const data = {
     title: formData.get('title') as string,
     slug: formData.get('slug') as string,
@@ -136,7 +138,7 @@ export async function updateBlog(id: string, formData: FormData) {
 
   const { error } = await supabase.from('blogs').update(data).eq('id', id);
   if (error) throw new Error(error.message);
-  
+
   revalidatePath('/admin/blogs');
   revalidatePath(`/blog/${data.slug}`);
   redirect('/admin/blogs');
@@ -152,23 +154,23 @@ export async function deleteBlog(id: string) {
 // --- FAQS ---
 export async function createFaq(formData: FormData) {
   const supabase = await verifyAdminAndGetClient();
-  
+
   const data = {
     question: formData.get('question') as string,
     answer: formData.get('answer') as string,
     service_slug: formData.get('service_slug') as string || null,
   };
 
-  const { error } = await supabase.from('faqs').insert(data);
+  const { error } = await supabase.from('faqs').insert([data]);
   if (error) throw new Error(error.message);
-  
+
   revalidatePath('/admin/faqs');
   redirect('/admin/faqs');
 }
 
 export async function updateFaq(id: string, formData: FormData) {
   const supabase = await verifyAdminAndGetClient();
-  
+
   const data = {
     question: formData.get('question') as string,
     answer: formData.get('answer') as string,
@@ -177,7 +179,7 @@ export async function updateFaq(id: string, formData: FormData) {
 
   const { error } = await supabase.from('faqs').update(data).eq('id', id);
   if (error) throw new Error(error.message);
-  
+
   revalidatePath('/admin/faqs');
   redirect('/admin/faqs');
 }
@@ -207,7 +209,7 @@ export async function deleteLead(id: string) {
 // --- NAVIGATION ---
 export async function createNavigation(formData: FormData) {
   const supabase = await verifyAdminAndGetClient();
-  
+
   const parent_id = formData.get('parent_id') as string;
   const data = {
     title: formData.get('title') as string,
@@ -217,9 +219,9 @@ export async function createNavigation(formData: FormData) {
     order: parseInt(formData.get('order') as string) || 0,
   };
 
-  const { error } = await supabase.from('navigation').insert(data);
+  const { error } = await supabase.from('navigation').insert([data]);
   if (error) throw new Error(error.message);
-  
+
   revalidatePath('/admin/navigation');
   revalidatePath('/');
   redirect('/admin/navigation');
@@ -227,7 +229,7 @@ export async function createNavigation(formData: FormData) {
 
 export async function updateNavigation(id: string, formData: FormData) {
   const supabase = await verifyAdminAndGetClient();
-  
+
   const parent_id = formData.get('parent_id') as string;
   const data = {
     title: formData.get('title') as string,
@@ -239,7 +241,7 @@ export async function updateNavigation(id: string, formData: FormData) {
 
   const { error } = await supabase.from('navigation').update(data).eq('id', id);
   if (error) throw new Error(error.message);
-  
+
   revalidatePath('/admin/navigation');
   revalidatePath('/');
   redirect('/admin/navigation');
@@ -256,7 +258,7 @@ export async function deleteNavigation(id: string) {
 // --- SETTINGS ---
 export async function updateSiteSettings(id: string, formData: FormData) {
   const supabase = await verifyAdminAndGetClient();
-  
+
   const data = {
     company_name: formData.get('company_name') as string || null,
     phone: formData.get('phone') as string || null,
@@ -268,7 +270,7 @@ export async function updateSiteSettings(id: string, formData: FormData) {
 
   const { error } = await supabase.from('site_settings').update(data).eq('id', id);
   if (error) throw new Error(error.message);
-  
+
   revalidatePath('/admin/settings');
   revalidatePath('/'); // Affects everywhere
   redirect('/admin/settings');
