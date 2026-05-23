@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       services: {
@@ -52,6 +52,7 @@ export interface Database {
           created_at?: string | null
           updated_at?: string | null
         }
+        Relationships: []
       }
       cities: {
         Row: {
@@ -75,6 +76,7 @@ export interface Database {
           state?: string | null
           created_at?: string | null
         }
+        Relationships: []
       }
       service_city_pages: {
         Row: {
@@ -113,6 +115,22 @@ export interface Database {
           metadata?: Json | null
           created_at?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "service_city_pages_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_city_pages_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       blogs: {
         Row: {
@@ -154,6 +172,7 @@ export interface Database {
           created_at?: string | null
           updated_at?: string | null
         }
+        Relationships: []
       }
       faqs: {
         Row: {
@@ -177,6 +196,7 @@ export interface Database {
           service_slug?: string | null
           created_at?: string | null
         }
+        Relationships: []
       }
       testimonials: {
         Row: {
@@ -206,6 +226,7 @@ export interface Database {
           rating?: number | null
           created_at?: string | null
         }
+        Relationships: []
       }
       leads: {
         Row: {
@@ -238,6 +259,7 @@ export interface Database {
           status?: string | null
           created_at?: string | null
         }
+        Relationships: []
       }
       navigation: {
         Row: {
@@ -267,6 +289,15 @@ export interface Database {
           order?: number | null
           created_at?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "navigation_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "navigation"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       site_settings: {
         Row: {
@@ -305,6 +336,7 @@ export interface Database {
           seo_defaults?: Json | null
           updated_at?: string | null
         }
+        Relationships: []
       }
       admins: {
         Row: {
@@ -328,6 +360,7 @@ export interface Database {
           permissions?: Json | null
           created_at?: string | null
         }
+        Relationships: []
       }
     }
     Views: {

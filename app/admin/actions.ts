@@ -22,9 +22,7 @@ export async function createService(formData: FormData) {
     meta_description: formData.get('meta_description') as string || null,
   };
 
-  const { error } = await supabase
-    .from('services')
-    .insert([data]);
+  const { error } = await supabase.from('services').insert(data as any);
   if (error) throw new Error(error.message);
 
   revalidatePath('/admin/services');
@@ -46,7 +44,7 @@ export async function updateService(id: string, formData: FormData) {
     updated_at: new Date().toISOString(),
   };
 
-  const { error } = await supabase.from('services').update(data).eq('id', id);
+  const { error } = await supabase.from('services').update(data as any).eq('id', id);
   if (error) throw new Error(error.message);
 
   revalidatePath('/admin/services');
@@ -71,7 +69,7 @@ export async function createCity(formData: FormData) {
     state: formData.get('state') as string || null,
   };
 
-  const { error } = await supabase.from('cities').insert([data]);
+  const { error } = await supabase.from('cities').insert(data as any);
   if (error) throw new Error(error.message);
 
   revalidatePath('/admin/cities');
@@ -87,7 +85,7 @@ export async function updateCity(id: string, formData: FormData) {
     state: formData.get('state') as string || null,
   };
 
-  const { error } = await supabase.from('cities').update(data).eq('id', id);
+  const { error } = await supabase.from('cities').update(data as any).eq('id', id);
   if (error) throw new Error(error.message);
 
   revalidatePath('/admin/cities');
@@ -115,7 +113,7 @@ export async function createBlog(formData: FormData) {
     meta_description: formData.get('meta_description') as string || null,
   };
 
-  const { error } = await supabase.from('blogs').insert([data]);
+  const { error } = await supabase.from('blogs').insert(data as any);
   if (error) throw new Error(error.message);
 
   revalidatePath('/admin/blogs');
@@ -136,7 +134,7 @@ export async function updateBlog(id: string, formData: FormData) {
     updated_at: new Date().toISOString(),
   };
 
-  const { error } = await supabase.from('blogs').update(data).eq('id', id);
+  const { error } = await supabase.from('blogs').update(data as any).eq('id', id);
   if (error) throw new Error(error.message);
 
   revalidatePath('/admin/blogs');
@@ -161,7 +159,7 @@ export async function createFaq(formData: FormData) {
     service_slug: formData.get('service_slug') as string || null,
   };
 
-  const { error } = await supabase.from('faqs').insert([data]);
+  const { error } = await supabase.from('faqs').insert(data as any);
   if (error) throw new Error(error.message);
 
   revalidatePath('/admin/faqs');
@@ -177,7 +175,7 @@ export async function updateFaq(id: string, formData: FormData) {
     service_slug: formData.get('service_slug') as string || null,
   };
 
-  const { error } = await supabase.from('faqs').update(data).eq('id', id);
+  const { error } = await supabase.from('faqs').update(data as any).eq('id', id);
   if (error) throw new Error(error.message);
 
   revalidatePath('/admin/faqs');
@@ -194,7 +192,7 @@ export async function deleteFaq(id: string) {
 // --- LEADS ---
 export async function updateLeadStatus(id: string, status: string) {
   const supabase = await verifyAdminAndGetClient();
-  const { error } = await supabase.from('leads').update({ status }).eq('id', id);
+  const { error } = await supabase.from('leads').update({ status } as any).eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/admin/leads');
 }
@@ -219,7 +217,7 @@ export async function createNavigation(formData: FormData) {
     order: parseInt(formData.get('order') as string) || 0,
   };
 
-  const { error } = await supabase.from('navigation').insert([data]);
+  const { error } = await supabase.from('navigation').insert(data as any);
   if (error) throw new Error(error.message);
 
   revalidatePath('/admin/navigation');
@@ -239,7 +237,7 @@ export async function updateNavigation(id: string, formData: FormData) {
     order: parseInt(formData.get('order') as string) || 0,
   };
 
-  const { error } = await supabase.from('navigation').update(data).eq('id', id);
+  const { error } = await supabase.from('navigation').update(data as any).eq('id', id);
   if (error) throw new Error(error.message);
 
   revalidatePath('/admin/navigation');
@@ -268,10 +266,10 @@ export async function updateSiteSettings(id: string, formData: FormData) {
     updated_at: new Date().toISOString(),
   };
 
-  const { error } = await supabase.from('site_settings').update(data).eq('id', id);
+  const { error } = await supabase.from('site_settings').update(data as any).eq('id', id);
   if (error) throw new Error(error.message);
 
   revalidatePath('/admin/settings');
-  revalidatePath('/'); // Affects everywhere
+  revalidatePath('/');
   redirect('/admin/settings');
 }
