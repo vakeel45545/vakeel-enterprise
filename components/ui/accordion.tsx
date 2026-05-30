@@ -33,9 +33,10 @@ export function AccordionItem({ question, answer, isOpen, onClick }: AccordionIt
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            <div className="px-6 pb-6 pt-0 text-charcoal/70 xl:text-lg leading-relaxed text-balance">
-              {answer}
-            </div>
+            <div 
+              className="px-6 pb-6 pt-0 text-charcoal/70 xl:text-lg leading-relaxed text-balance prose prose-sm max-w-none prose-a:text-sage hover:prose-a:text-emerald-700 prose-p:my-2"
+              dangerouslySetInnerHTML={{ __html: answer }}
+            />
           </motion.div>
         )}
       </AnimatePresence>

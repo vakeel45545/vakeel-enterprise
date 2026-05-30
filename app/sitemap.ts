@@ -1,13 +1,15 @@
 import { MetadataRoute } from 'next';
-import { getServices, getCities, getBlogs } from '@/lib/api/services';
+import { getServices, getCities, getBlogs, getDistinctBlogCategories, getAllPublishedPages } from '@/lib/api/services';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.APP_URL || 'http://localhost:3000';
 
-  const [services, cities, blogs] = await Promise.all([
+  const [services, cities, blogs, categories, pages] = await Promise.all([
     getServices(),
     getCities(),
     getBlogs(),
+    getDistinctBlogCategories(),
+    getAllPublishedPages(),
   ]);
 
   const sitemapEntries: MetadataRoute.Sitemap = [
@@ -52,6 +54,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(blog.updated_at || Date.now()),
       changeFrequency: 'monthly',
       priority: 0.6,
+    });
+  });
+
+  // Add blog categories
+  categories.forEach((category) => {
+    sitemapEntries.push({
+      url: `${baseUrl}/blog/category/${encodeURIComponent(category.toLowerCase().replace(/\s+/g, '-'))}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    });
+  });
+
+  // Add CMS pages (universal page system)
+  pages?.forEach((page) => {
+    sitemapEntries.push({
+      url: `${baseUrl}/${page.slug}`,
+      lastModified: new Date(page.updated_at || Date.now()),
+      changeFrequency: 'weekly',
+      priority: 0.8,
     });
   });
 

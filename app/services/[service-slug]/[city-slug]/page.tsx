@@ -3,6 +3,7 @@ import { ArrowRight, CheckCircle2, ShieldCheck, Star, Clock, Zap, Building2, Tre
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { getServiceBySlug, getCityBySlug, getServiceCityPage } from '@/lib/api/services';
+import { stripHtmlTags } from '@/lib/utils';
 import type { Metadata } from 'next';
 
 export async function generateMetadata({ params }: { params: Promise<{ 'service-slug': string, 'city-slug': string }> }): Promise<Metadata> {
@@ -19,19 +20,51 @@ export async function generateMetadata({ params }: { params: Promise<{ 'service-
   const serviceTitle = service?.title || fallbackServiceTitle;
   const cityName = city?.city_name || fallbackCityName;
 
+  const baseUrl = process.env.APP_URL || 'https://vakeel.com';
+  const imageUrl = `${baseUrl}/og-fallback.jpg`; // Defaulting to premium fallback
+
   if (service && city) {
     const customPage = await getServiceCityPage(service.id, city.id);
     if (customPage?.meta_title) {
+      const title = customPage.meta_title;
+      const description = customPage.meta_description || `Get ${serviceTitle} in ${cityName} completely online.`;
       return {
-        title: customPage.meta_title,
-        description: customPage.meta_description || `Get ${serviceTitle} in ${cityName} completely online.`,
+        title,
+        description,
+        keywords: `${serviceTitle.toLowerCase()} in ${cityName.toLowerCase()}, ${cityName} business registration, vakeel`.replace(/^, /, ''),
+        alternates: { canonical: `${baseUrl}/services/${serviceSlug}/${citySlug}` },
+        robots: { index: true, follow: true },
+        openGraph: {
+          title,
+          description,
+          url: `${baseUrl}/services/${serviceSlug}/${citySlug}`,
+          siteName: 'Vakeel',
+          images: [{ url: imageUrl, width: 1200, height: 630, alt: title }],
+          type: 'website',
+        },
+        twitter: { card: 'summary_large_image', title, description, images: [imageUrl] }
       };
     }
   }
 
+  const title = `${serviceTitle} in ${cityName} | Vakeel`;
+  const description = service?.meta_description || stripHtmlTags(service?.short_description) || `Get ${serviceTitle} in ${cityName} completely online with Vakeel.`;
+
   return {
-    title: `${serviceTitle} in ${cityName} | Vakeel`,
-    description: service?.meta_description || `Get ${serviceTitle} in ${cityName} completely online with Vakeel.`,
+    title,
+    description,
+    keywords: `${serviceTitle.toLowerCase()} in ${cityName.toLowerCase()}, ${cityName} business registration, vakeel`.replace(/^, /, ''),
+    alternates: { canonical: `${baseUrl}/services/${serviceSlug}/${citySlug}` },
+    robots: { index: true, follow: true },
+    openGraph: {
+      title,
+      description,
+      url: `${baseUrl}/services/${serviceSlug}/${citySlug}`,
+      siteName: 'Vakeel',
+      images: [{ url: imageUrl, width: 1200, height: 630, alt: title }],
+      type: 'website',
+    },
+    twitter: { card: 'summary_large_image', title, description, images: [imageUrl] }
   };
 }
 
@@ -77,9 +110,10 @@ export default async function ServiceCityPage({ params }: { params: Promise<{ 's
                 in {cityName}.
               </span>
             </h1>
-            <p className="text-lg md:text-xl lg:text-2xl text-white/70 mb-10 max-w-2xl leading-relaxed text-balance font-medium">
-              {heroContent}
-            </p>
+            <div 
+              className="prose prose-lg lg:prose-xl prose-invert prose-p:text-white/70 prose-a:text-sage hover:prose-a:text-white prose-a:transition-colors max-w-2xl mb-10 leading-relaxed text-balance font-medium"
+              dangerouslySetInnerHTML={{ __html: heroContent }} 
+            />
             
             <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" className="bg-white text-charcoal hover:bg-sage hover:text-white shadow-premium-hover transition-all transition-spring rounded-xl h-14 lg:h-16 px-8 lg:px-10 text-base lg:text-lg group font-bold">

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/editor/rich-text-editor';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { updateService } from '../../../actions';
@@ -56,7 +56,7 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
 
             <div className="space-y-2">
               <label htmlFor="short_description" className="text-sm font-semibold text-charcoal">Short Description</label>
-              <Textarea id="short_description" name="short_description" defaultValue={service.short_description || ''} rows={3} className="bg-gray-50 border-gray-200 resize-none" />
+              <RichTextEditor id="short_description" name="short_description" defaultValue={service.short_description || ''} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

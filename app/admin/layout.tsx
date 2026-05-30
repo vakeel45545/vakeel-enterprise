@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Settings, FileText, MapPin, Users, HelpCircle, LayoutDashboard, LogOut, Navigation, Menu } from 'lucide-react';
+import { Settings, FileText, MapPin, Users, HelpCircle, LayoutDashboard, LogOut, Navigation, Menu, Footprints, BookOpen, Activity } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -22,9 +22,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { name: 'Services', href: '/admin/services', icon: FileText },
     { name: 'Cities', href: '/admin/cities', icon: MapPin },
     { name: 'Blogs', href: '/admin/blogs', icon: FileText },
+    { name: 'Pages', href: '/admin/pages', icon: BookOpen },
     { name: 'FAQs', href: '/admin/faqs', icon: HelpCircle },
     { name: 'Leads', href: '/admin/leads', icon: Users },
     { name: 'Navigation', href: '/admin/navigation', icon: Navigation },
+    { name: 'Footer', href: '/admin/footer', icon: Footprints },
+    { name: 'System', href: '/admin/system', icon: Activity },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 

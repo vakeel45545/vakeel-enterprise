@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/editor/rich-text-editor';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { updateFaq } from '../../../actions';
@@ -45,7 +45,7 @@ export default async function EditFaqPage({ params }: { params: Promise<{ id: st
 
             <div className="space-y-2">
               <label htmlFor="answer" className="text-sm font-semibold text-charcoal">Answer *</label>
-              <Textarea id="answer" name="answer" defaultValue={faq.answer} required rows={4} className="bg-gray-50 border-gray-200 resize-none" />
+              <RichTextEditor id="answer" name="answer" defaultValue={faq.answer} />
             </div>
 
             <div className="space-y-2">
