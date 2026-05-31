@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { MetadataRoute } from 'next';
 import { getServices, getCities, getBlogs, getDistinctBlogCategories, getAllPublishedPages } from '@/lib/api/services';
 

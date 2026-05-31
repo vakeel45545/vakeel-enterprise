@@ -10,12 +10,7 @@ interface Params {
   params: Promise<{ category: string }>;
 }
 
-export async function generateStaticParams() {
-  const categories = await getDistinctBlogCategories();
-  return categories.map((cat) => ({
-    category: cat.toLowerCase().replace(/\s+/g, '-'),
-  }));
-}
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { category } = await params;
