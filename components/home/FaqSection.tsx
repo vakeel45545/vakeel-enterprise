@@ -23,27 +23,50 @@ export function FaqSection() {
   const [openId, setOpenId] = useState<string | null>('1'); // Open first by default
   const [faqs, setFaqs] = useState(FALLBACK_FAQS);
 
-  useEffect(() => {
-    async function fetchFaqs() {
-      try {
-        // Attempt to fetch global FAQs (service_slug is null)
-        const { data, error } = await supabase
-          .from('faqs')
-          .select('*')
-          .is('service_slug', null)
-          .order('created_at', { ascending: true })
-          .limit(6);
+//   useEffect(() => {
+//     async function fetchFaqs() {
+//       try {
+//         // Attempt to fetch global FAQs (service_slug is null)
+//         const { data, error } = await supabase
+//           .from('faqs')
+//           .select('*')
+//           .is('service_slug', null)
+//           .order('created_at', { ascending: true })
+//           .limit(6);
           
-        if (data && data.length > 0) {
-          setFaqs(data as any);
-          setOpenId(data[0].id);
-        }
-      } catch (err) {
-        console.error("Failed to fetch FAQs, using fallback.", err);
+//         if (data && data.length > 0) {
+//           setFaqs(data as any);
+//           setOpenId(data[0].id);
+//         }
+//       } catch (err) {
+//         console.error("Failed to fetch FAQs, using fallback.", err);
+//       }
+//     }
+//     fetchFaqs();
+//   }, []);
+
+useEffect(() => {
+  async function fetchFaqs() {
+    try {
+      const { data, error } = await supabase
+        .from('faqs')
+        .select('*')
+        .is('service_slug', null)
+        .order('created_at', { ascending: true })
+        .limit(6);
+
+      console.log('FAQ fetch result:', data, error); // ADD THIS
+
+      if (data && data.length > 0) {
+        setFaqs(data as any);
+        setOpenId(data[0].id);
       }
+    } catch (err) {
+      console.error("Failed to fetch FAQs, using fallback.", err);
     }
-    fetchFaqs();
-  }, []);
+  }
+  fetchFaqs();
+}, []);
 
   return (
     <section className="py-24 lg:py-28 bg-ivory relative overflow-hidden">
@@ -88,3 +111,4 @@ export function FaqSection() {
     </section>
   );
 }
+
