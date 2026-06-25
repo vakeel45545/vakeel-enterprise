@@ -59,7 +59,7 @@ useEffect(() => {
 
       if (data && data.length > 0) {
         setFaqs(data as any);
-        setOpenId(data[0].id);
+        setOpenId((data[0] as any).id);
       }
     } catch (err) {
       console.error("Failed to fetch FAQs, using fallback.", err);

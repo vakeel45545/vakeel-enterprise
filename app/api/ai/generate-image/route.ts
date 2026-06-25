@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { genAI, IMAGE_MODEL, generateText, parseJsonResponse } from '@/lib/ai/gemini';
-import { createClient } from '@/lib/supabase/server';
+import { uploadToMediaLibrary } from '@/lib/media/uploader';
 
 export async function POST(req: NextRequest) {
   try {
-    const { topic } = await req.json();
+    const body = await req.json();
+    const topic = body.topic || body.prompt;
 
     if (!topic) {
-      return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Topic or prompt is required' }, { status: 400 });
     }
 
     // Step 1: Generate an image prompt via Gemini text
@@ -41,24 +42,18 @@ export async function POST(req: NextRequest) {
       const parts = imageResponse.candidates?.[0]?.content?.parts ?? [];
       for (const part of parts) {
         if (part.inlineData?.data && part.inlineData?.mimeType) {
-          // Step 3: Upload to Supabase Storage
+          // Step 3: Upload to Supabase Storage and Insert into Media Library
           const imageBuffer = Buffer.from(part.inlineData.data, 'base64');
-          const fileName = `blog-${Date.now()}.png`;
+          const blob = new Blob([imageBuffer], { type: part.inlineData.mimeType });
+          
+          const media = await uploadToMediaLibrary({
+            file: blob,
+            source: 'ai_generated',
+            alt_text: topic,
+            image_prompt: imagePrompt,
+          });
 
-          const supabase = await createClient();
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('blog-images')
-            .upload(fileName, imageBuffer, {
-              contentType: part.inlineData.mimeType,
-              upsert: false,
-            });
-
-          if (!uploadError && uploadData) {
-            const { data: publicUrlData } = supabase.storage
-              .from('blog-images')
-              .getPublicUrl(uploadData.path);
-            imageUrl = publicUrlData.publicUrl;
-          }
+          imageUrl = media.url;
           break;
         }
       }
@@ -66,13 +61,12 @@ export async function POST(req: NextRequest) {
       console.warn('[AI] Image generation failed, using placeholder:', imgErr);
     }
 
-    // Fallback: Use a placeholder image service if Gemini image generation failed
     if (!imageUrl) {
       const encodedTopic = encodeURIComponent(topic.slice(0, 50));
       imageUrl = `https://images.unsplash.com/1600x900/?${encodedTopic},legal,india&auto=format&fit=crop`;
     }
 
-    return NextResponse.json({ imageUrl });
+    return NextResponse.json({ url: imageUrl, imageUrl });
   } catch (err) {
     console.error('[AI] generate-image error:', err);
     return NextResponse.json(

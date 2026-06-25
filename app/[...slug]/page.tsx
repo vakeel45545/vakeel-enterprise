@@ -11,10 +11,11 @@ import { SectionRenderer, SectionData } from '@/components/cms/SectionRenderer';
 export async function generateMetadata({ params }: { params: Promise<{ slug: string[] }> }): Promise<Metadata> {
   const resolvedParams = await params;
   const { slug } = resolvedParams;
-  const fullSlug = slug.join('/');
+  const slugArray = Array.isArray(slug) ? slug : (typeof slug === 'string' ? [slug] : []);
+  const fullSlug = slugArray.join('/');
 
   // Try CMS page first
-  const page = await getPageBySlug(fullSlug);
+  const page = await getPageBySlug(fullSlug) as any;
   if (page) {
     return generatePageSEO(page);
   }
@@ -25,10 +26,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function DynamicPage({ params }: { params: Promise<{ slug: string[] }> }) {
   const resolvedParams = await params;
   const { slug } = resolvedParams;
-  const fullSlug = slug.join('/');
+  const slugArray = Array.isArray(slug) ? slug : (typeof slug === 'string' ? [slug] : []);
+  const fullSlug = slugArray.join('/');
 
   // ─── TRY CMS PAGE FROM DB ───
-  const page = await getPageBySlug(fullSlug);
+  const page = await getPageBySlug(fullSlug) as any;
 
 if (page) {
   // Fetch sections from page_sections table (admin builder saves here)
@@ -50,9 +52,9 @@ if (page) {
   }));
     const breadcrumbs = [
       { name: 'Home', href: '/' },
-      ...slug.map((s, i) => ({
+      ...slugArray.map((s, i) => ({
         name: s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' '),
-        href: '/' + slug.slice(0, i + 1).join('/'),
+        href: '/' + slugArray.slice(0, i + 1).join('/'),
       })),
     ];
 

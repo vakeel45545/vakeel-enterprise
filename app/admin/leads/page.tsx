@@ -66,7 +66,7 @@ export default async function AdminLeadsPage() {
                       <LeadStatusSelect leadId={lead.id} currentStatus={lead.status || 'new'} />
                     </td>
                     <td className="px-6 py-4 text-gray-500 text-xs">
-                      {new Date(lead.created_at || '').toLocaleDateString()}
+                      {lead.created_at ? lead.created_at.split('T')[0] : 'N/A'}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">

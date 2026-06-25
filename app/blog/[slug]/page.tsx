@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { ArrowRight, BookOpen, Clock, ChevronRight, Calendar, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import Image from 'next/image';
 import { getBlogBySlug, getRelatedBlogs } from '@/lib/api/blogs';
 import { marked } from 'marked';
 import { generateBlogSEO } from '@/lib/seo/generateMetadata';
@@ -41,6 +42,17 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
       : []),
     { name: blog.title, href: `/blog/${slug}` },
   ];
+
+  const headings: { level: number, text: string, id: string }[] = [];
+  let processedHtml = htmlContent;
+
+  // Extract headings and inject IDs
+  processedHtml = processedHtml.replace(/<h([23])[^>]*>(.*?)<\/h\1>/gi, (match: string, level: string, text: string) => {
+    const plainText = text.replace(/<[^>]*>/g, '');
+    const id = plainText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    headings.push({ level: parseInt(level), text: plainText, id });
+    return `<h${level} id="${id}" class="scroll-mt-24">${text}</h${level}>`;
+  });
 
   return (
     <main className="min-h-screen bg-ivory pb-20 selection:bg-sage/30 selection:text-sage">
@@ -95,66 +107,122 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
         </div>
       </section>
 
-      {/* Content */}
-      <section className="py-24 section-connector-top">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="bg-white rounded-[2rem] p-8 md:p-12 lg:p-16 border border-charcoal/[0.04] shadow-[0_8px_32px_-8px_rgba(0,0,0,0.04)] animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 fill-mode-both relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sage/50 via-emerald-500/50 to-amber/50"></div>
+      {/* Content Area */}
+      <section className="py-16 md:py-24 relative z-10">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+            
+            {/* Left: Main Content */}
+            <div className="lg:col-span-8">
+              <div className="bg-white rounded-[2rem] p-8 md:p-12 lg:p-16 border border-charcoal/[0.04] shadow-premium relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sage/50 via-emerald-500/50 to-amber/50"></div>
 
-            {/* Meta row */}
-            <div className="flex flex-wrap items-center gap-6 text-charcoal/45 text-sm font-semibold mb-12 border-b border-charcoal/[0.06] pb-6 uppercase tracking-wider">
-              <div className="flex items-center gap-2">
-                {blog?.author?.avatar ? (
-                  <img src={blog.author.avatar} alt={blog.author.name} className="w-6 h-6 rounded-full object-cover shadow-sm" />
-                ) : (
-                  <div className="w-6 h-6 rounded-full bg-sage/20 flex items-center justify-center text-sage font-bold text-xs shadow-sm">
-                    {blog?.author?.name?.charAt(0) || 'V'}
+                {/* Meta row */}
+                <div className="flex flex-wrap items-center gap-6 text-charcoal/45 text-sm font-semibold mb-12 border-b border-charcoal/[0.06] pb-6 uppercase tracking-wider">
+                  <div className="flex items-center gap-2">
+                    {blog?.author?.avatar ? (
+                      <img src={blog.author.avatar} alt={blog.author.name} className="w-6 h-6 rounded-full object-cover shadow-sm" />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-charcoal/10 flex items-center justify-center text-[10px] text-charcoal">
+                        {blog?.author?.name?.[0] || 'V'}
+                      </div>
+                    )}
+                    <span className="text-charcoal/70">{blog?.author?.name || 'Vakeel Team'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-sage" />
+                    {new Date(blog.created_at || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </div>
+                  {blog.reading_time ? (
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-amber" /> {blog.reading_time} min read
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2"><BookOpen className="w-4 h-4 text-amber" /> 5 min read</div>
+                  )}
+                </div>
+
+                {/* Featured Image */}
+                {blog.thumbnail && (
+                  <div className="mb-12 rounded-[2rem] overflow-hidden relative w-full h-[400px] md:h-[500px] shadow-premium">
+                    <Image
+                      src={blog.thumbnail}
+                      alt={blog.title || 'Blog featured image'}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="object-cover"
+                    />
                   </div>
                 )}
-                <span className="text-charcoal/70">{blog?.author?.name || 'Vakeel Team'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-sage" />
-                {new Date(blog.created_at || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </div>
-              {blog.reading_time && (
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-amber" /> {blog.reading_time} min read
+
+                {/* Rich content */}
+                <div
+                  className="prose prose-lg lg:prose-xl prose-headings:font-display prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-charcoal prose-headings:mt-12 prose-headings:mb-6 prose-a:text-sage prose-a:font-semibold hover:prose-a:text-emerald-700 prose-p:text-charcoal/75 prose-p:leading-loose prose-p:mb-6 prose-blockquote:border-l-4 prose-blockquote:border-sage prose-blockquote:bg-sage/5 prose-blockquote:p-6 prose-blockquote:rounded-r-xl prose-blockquote:italic prose-blockquote:text-charcoal/80 prose-img:rounded-[2rem] prose-img:shadow-premium prose-hr:border-charcoal/10 prose-strong:text-charcoal prose-strong:font-bold prose-li:text-charcoal/75 prose-li:my-2 prose-ul:my-6 max-w-none transition-all duration-300"
+                  dangerouslySetInnerHTML={{ __html: processedHtml }}
+                />
+
+                {/* Tags */}
+                {blog.tags && blog.tags.length > 0 && (
+                  <div className="mt-12 pt-8 border-t border-charcoal/10 flex flex-wrap gap-3">
+                    {blog.tags.map((tag: string, i: number) => (
+                      <span key={i} className="px-4 py-2 bg-charcoal/5 rounded-full text-charcoal/60 text-sm font-semibold hover:bg-charcoal/10 transition-colors cursor-pointer">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* CTA bottom */}
+                <div className="mt-16 pt-10 border-t border-charcoal/[0.06] flex flex-col sm:flex-row items-center justify-between gap-6 bg-ivory -mx-8 md:-mx-12 lg:-mx-16 -mb-8 md:-mb-12 lg:-mb-16 p-8 md:p-12 lg:p-16">
+                  <div>
+                    <h4 className="font-display font-bold text-2xl text-charcoal mb-2">Need legal assistance?</h4>
+                    <p className="text-charcoal/60 font-medium">Our experts can help you with your compliance and legal needs. Request a callback now.</p>
+                  </div>
+                  <Link href="/contact">
+                    <Button className="bg-charcoal text-white hover:bg-sage shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-premium-hover transition-all duration-300 h-14 px-8 group shrink-0 rounded-xl font-bold">
+                      Contact Us <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </Link>
                 </div>
-              )}
-              {!blog.reading_time && (
-                <div className="flex items-center gap-2"><BookOpen className="w-4 h-4 text-amber" /> 5 min read</div>
-              )}
+              </div>
             </div>
 
-            {/* Rich content */}
-            <div
-              className="prose prose-lg lg:prose-xl prose-headings:font-display prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-charcoal prose-headings:mt-12 prose-headings:mb-6 prose-a:text-sage prose-a:font-semibold hover:prose-a:text-emerald-700 prose-p:text-charcoal/75 prose-p:leading-loose prose-p:mb-6 prose-blockquote:border-l-4 prose-blockquote:border-sage prose-blockquote:bg-sage/5 prose-blockquote:p-6 prose-blockquote:rounded-r-xl prose-blockquote:italic prose-blockquote:text-charcoal/80 prose-img:rounded-[2rem] prose-img:shadow-premium prose-hr:border-charcoal/10 prose-strong:text-charcoal prose-strong:font-bold prose-li:text-charcoal/75 prose-li:my-2 prose-ul:my-6 max-w-none transition-all duration-300"
-              dangerouslySetInnerHTML={{ __html: htmlContent }}
-            />
-
-            {/* Tags */}
-            {blog.tags && blog.tags.length > 0 && (
-              <div className="mt-12 pt-8 border-t border-charcoal/10 flex flex-wrap gap-3">
-                {blog.tags.map((tag, i) => (
-                  <span key={i} className="px-4 py-2 bg-charcoal/5 rounded-full text-charcoal/60 text-sm font-semibold hover:bg-charcoal/10 transition-colors cursor-pointer">
-                    #{tag}
-                  </span>
-                ))}
+            {/* Right: Sidebar */}
+            <div className="lg:col-span-4 space-y-8">
+              {/* Share Widget */}
+              <div className="bg-white rounded-[2rem] p-8 border border-charcoal/[0.04] shadow-premium">
+                <h4 className="font-display font-bold text-xl text-charcoal mb-6">Share this article</h4>
+                <div className="flex items-center gap-3">
+                  <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(blog.title)}&url=${encodeURIComponent(BASE_URL + '/blog/' + slug)}`} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-[#1DA1F2]/10 text-[#1DA1F2] flex items-center justify-center hover:bg-[#1DA1F2] hover:text-white transition-colors">
+                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723 10.054 10.054 0 01-3.127 1.195 4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
+                  </a>
+                  <a href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(BASE_URL + '/blog/' + slug)}&title=${encodeURIComponent(blog.title)}`} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-[#0077b5]/10 text-[#0077b5] flex items-center justify-center hover:bg-[#0077b5] hover:text-white transition-colors">
+                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                  </a>
+                  <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(BASE_URL + '/blog/' + slug)}`} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-[#1877F2]/10 text-[#1877F2] flex items-center justify-center hover:bg-[#1877F2] hover:text-white transition-colors">
+                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                  </a>
+                </div>
               </div>
-            )}
 
-            {/* CTA bottom */}
-            <div className="mt-16 pt-10 border-t border-charcoal/[0.06] flex flex-col sm:flex-row items-center justify-between gap-6 bg-ivory -mx-8 md:-mx-12 lg:-mx-16 -mb-8 md:-mb-12 lg:-mb-16 p-8 md:p-12 lg:p-16">
-              <div>
-                <h4 className="font-display font-bold text-2xl text-charcoal mb-2">Need legal assistance?</h4>
-                <p className="text-charcoal/60 font-medium">Our experts can help you with your compliance and legal needs. Request a callback now.</p>
-              </div>
-              <Link href="/contact">
-                <Button className="bg-charcoal text-white hover:bg-sage shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-premium-hover transition-all duration-300 h-14 px-8 group shrink-0 rounded-xl font-bold">
-                  Contact Us <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
+              {/* Table of Contents */}
+              {headings.length > 0 && (
+                <div className="bg-white rounded-[2rem] p-8 border border-charcoal/[0.04] shadow-premium sticky top-32">
+                  <h4 className="font-display font-bold text-xl text-charcoal mb-6 pb-4 border-b border-gray-100">Table of Contents</h4>
+                  <ul className="space-y-3">
+                    {headings.map((heading, i) => (
+                      <li key={i} className={`${heading.level === 3 ? 'ml-4' : ''}`}>
+                        <a 
+                          href={`#${heading.id}`}
+                          className="text-sm font-medium text-charcoal/70 hover:text-sage transition-colors line-clamp-2"
+                        >
+                          {heading.text}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Twitter, Linkedin, Instagram, Facebook, Mail, Phone, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '../ui/button';
 
@@ -58,7 +59,7 @@ export default function Footer({ footerData }: FooterProps) {
   const ctaDesc = settings?.footer_cta_description || 'Join thousands of founders running their companies on autopilot.';
   const ctaButtonText = settings?.footer_cta_button_text || 'Get Started Free';
   const ctaButtonUrl = settings?.footer_cta_button_url || '/contact';
-  const copyright = settings?.copyright_text || `© ${new Date().getFullYear()} ${companyName}. Built for scale.`;
+  const copyright = settings?.copyright_text || `© 2026 ${companyName}. Built for scale.`;
 
   // Social links from DB
   const socialLinks = settings?.social_links
@@ -119,8 +120,8 @@ export default function Footer({ footerData }: FooterProps) {
           {/* Brand & Contact */}
           <div className="lg:col-span-5 pr-0 xl:pr-12">
             <Link href="/" className="inline-flex items-center gap-3 group mb-8">
-              <div className="w-12 h-12 rounded-[14px] bg-gradient-to-br from-sage to-emerald-700 flex items-center justify-center text-white font-display font-bold text-2xl shadow-lg group-hover:scale-105 transition-spring duration-500 shadow-sage/30 border border-white/20">
-                V
+              <div className="relative w-14 h-14 rounded-2xl overflow-hidden shrink-0 group-hover:scale-105 transition-spring duration-500">
+                <Image src="/logo.png" alt="Logo" fill className="object-cover scale-[1.35]" />
               </div>
               <span className="font-display font-bold text-3xl tracking-tight text-white">{companyName}</span>
             </Link>

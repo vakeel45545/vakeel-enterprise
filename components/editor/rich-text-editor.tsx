@@ -38,10 +38,11 @@ interface RichTextEditorProps {
   defaultValue?: string;
   placeholder?: string;
   onContentChange?: (html: string) => void;
+  onOpenImagePicker?: () => void;
 }
 
 export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
-  function RichTextEditor({ id, name, defaultValue = '', placeholder = 'Write something...', onContentChange }, ref) {
+  function RichTextEditor({ id, name, defaultValue = '', placeholder = 'Write something...', onContentChange, onOpenImagePicker }, ref) {
     // Try to parse markdown if the content doesn't look like an HTML string already.
     // This allows AI-generated markdown to be converted cleanly.
     const isHtml = /<\/?[a-z][\s\S]*>/i.test(defaultValue);
@@ -125,9 +126,13 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
     }
 
     const addImage = () => {
-      const url = window.prompt('URL');
-      if (url) {
-        editor.chain().focus().setImage({ src: url }).run();
+      if (onOpenImagePicker) {
+        onOpenImagePicker();
+      } else {
+        const url = window.prompt('URL');
+        if (url) {
+          editor.chain().focus().setImage({ src: url }).run();
+        }
       }
     };
 

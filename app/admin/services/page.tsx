@@ -46,20 +46,20 @@ export default async function AdminServicesPage() {
                     <td className="px-6 py-4 font-medium text-charcoal">{service.title}</td>
                     <td className="px-6 py-4 text-gray-500 font-mono text-xs bg-gray-50/50 rounded px-2 py-1 inline-block mt-3">{service.slug}</td>
                     <td className="px-6 py-4 text-gray-500">
-                      {new Date(service.created_at || '').toLocaleDateString()}
+                      {service.created_at ? service.created_at.split('T')[0] : 'N/A'}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <Link href={`/services/${service.slug}`} target="_blank">
-                          <Button variant="outline" size="icon" className="w-8 h-8 rounded-lg border-gray-200 text-gray-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50">
+                        <Button asChild variant="outline" size="icon" className="w-8 h-8 rounded-lg border-gray-200 text-gray-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50">
+                          <Link href={`/services/${service.slug}`} target="_blank">
                             <ExternalLink className="w-4 h-4" />
-                          </Button>
-                        </Link>
-                        <Link href={`/admin/services/${service.id}/edit`}>
-                          <Button variant="outline" size="icon" className="w-8 h-8 rounded-lg border-gray-200 text-gray-500 hover:text-amber hover:border-amber/30 hover:bg-amber/10">
+                          </Link>
+                        </Button>
+                        <Button asChild variant="outline" size="icon" className="w-8 h-8 rounded-lg border-gray-200 text-gray-500 hover:text-amber hover:border-amber/30 hover:bg-amber/10">
+                          <Link href={`/admin/services/${service.id}/edit`}>
                             <Edit className="w-4 h-4" />
-                          </Button>
-                        </Link>
+                          </Link>
+                        </Button>
                         <DeleteButton id={service.id} deleteAction={deleteService} itemName={service.title} />
                       </div>
                     </td>

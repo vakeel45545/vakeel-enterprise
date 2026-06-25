@@ -48,11 +48,11 @@ export default async function AdminCitiesPage() {
                     <td className="px-6 py-4 text-gray-500">{city.state}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <Link href={`/admin/cities/${city.id}/edit`}>
-                          <Button variant="outline" size="icon" className="w-8 h-8 rounded-lg border-gray-200 text-gray-500 hover:text-amber hover:border-amber/30 hover:bg-amber/10">
+                        <Button asChild variant="outline" size="icon" className="w-8 h-8 rounded-lg border-gray-200 text-gray-500 hover:text-amber hover:border-amber/30 hover:bg-amber/10">
+                          <Link href={`/admin/cities/${city.id}/edit`}>
                             <Edit className="w-4 h-4" />
-                          </Button>
-                        </Link>
+                          </Link>
+                        </Button>
                         <DeleteButton id={city.id} deleteAction={deleteCity} itemName={city.city_name} />
                       </div>
                     </td>

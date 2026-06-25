@@ -53,7 +53,7 @@ export default async function SystemHealthPage() {
     return acc;
   }, {} as Record<string, number>);
 
-  Object.entries(slugCounts).forEach(([slug, count]) => {
+  Object.entries(slugCounts).forEach(([slug, count]: [string, any]) => {
     if (count > 1) {
       issues.push({
         type: 'duplicate_slug',

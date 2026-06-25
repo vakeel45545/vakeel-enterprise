@@ -1,82 +1,30 @@
 export const dynamic = 'force-dynamic';
 import { MetadataRoute } from 'next';
-import { getServices, getCities, getBlogs, getDistinctBlogCategories, getAllPublishedPages } from '@/lib/api/services';
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+/**
+ * Sitemap index — splits the sitemap into multiple sub-sitemaps for scalability.
+ * Google recommends max 50,000 URLs per sitemap file.
+ */
+export default function sitemap(): MetadataRoute.Sitemap {
+  const baseUrl = process.env.APP_URL || 'https://vakeel.com';
 
-  const [services, cities, blogs, categories, pages] = await Promise.all([
-    getServices(),
-    getCities(),
-    getBlogs(),
-    getDistinctBlogCategories(),
-    getAllPublishedPages(),
-  ]);
-
-  const sitemapEntries: MetadataRoute.Sitemap = [
+  // Return sitemap index entries pointing to sub-sitemaps
+  return [
     {
-      url: baseUrl,
+      url: `${baseUrl}/services-sitemap.xml`,
       lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 1,
     },
     {
-      url: `${baseUrl}/blog`,
+      url: `${baseUrl}/blogs-sitemap.xml`,
       lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/pages-sitemap.xml`,
+      lastModified: new Date(),
+    },
+    {
+      url: `${baseUrl}/categories-sitemap.xml`,
+      lastModified: new Date(),
     },
   ];
-
-  // Add services
-  services?.forEach((service) => {
-    sitemapEntries.push({
-      url: `${baseUrl}/services/${service.slug}`,
-      lastModified: new Date(service.updated_at || Date.now()),
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    });
-
-    // Add service + city combinations
-    cities?.forEach((city) => {
-      sitemapEntries.push({
-        url: `${baseUrl}/services/${service.slug}/${city.slug}`,
-        lastModified: new Date(),
-        changeFrequency: 'weekly',
-        priority: 0.7,
-      });
-    });
-  });
-
-  // Add blogs
-  blogs?.forEach((blog) => {
-    sitemapEntries.push({
-      url: `${baseUrl}/blog/${blog.slug}`,
-      lastModified: new Date(blog.updated_at || Date.now()),
-      changeFrequency: 'monthly',
-      priority: 0.6,
-    });
-  });
-
-  // Add blog categories
-  categories.forEach((category) => {
-    sitemapEntries.push({
-      url: `${baseUrl}/blog/category/${encodeURIComponent(category.toLowerCase().replace(/\s+/g, '-'))}`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.7,
-    });
-  });
-
-  // Add CMS pages (universal page system)
-  pages?.forEach((page) => {
-    sitemapEntries.push({
-      url: `${baseUrl}/${page.slug}`,
-      lastModified: new Date(page.updated_at || Date.now()),
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    });
-  });
-
-  return sitemapEntries;
 }

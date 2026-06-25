@@ -176,8 +176,8 @@ export default function Navbar({ navItems, companyName = 'Vakeel' }: NavbarProps
 
             {/* ===== LEFT: Logo ===== */}
             <Link href="/" className="flex items-center gap-2 group shrink-0">
-              <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-xl bg-charcoal flex items-center justify-center text-white font-display font-bold text-base lg:text-lg shadow-[0_2px_10px_rgba(0,0,0,0.15)] group-hover:scale-105 transition-spring duration-300">
-                V
+              <div className="relative w-12 h-12 lg:w-16 lg:h-16 rounded-xl overflow-hidden shrink-0 group-hover:scale-105 transition-spring duration-300">
+                <Image src="/logo.png" alt="Logo" fill className="object-cover scale-[1.35]" />
               </div>
               <span className="font-display font-bold text-lg lg:text-xl tracking-tight text-charcoal">
                 {companyName}
@@ -458,8 +458,8 @@ export default function Navbar({ navItems, companyName = 'Vakeel' }: NavbarProps
             >
               <div className="flex items-center justify-between w-full h-full">
                 <Link href="/" className="flex items-center gap-2.5" onClick={closeMobileMenu}>
-                  <div className="w-8 h-8 rounded-xl bg-charcoal flex items-center justify-center text-white font-display font-bold text-base shadow-sm">
-                    V
+                  <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 group-hover:scale-105 transition-spring duration-300">
+                    <Image src="/logo.png" alt="Logo" fill className="object-cover scale-[1.35]" />
                   </div>
                   <span className="font-display font-bold text-[17px] tracking-tight text-charcoal">
                     {companyName}

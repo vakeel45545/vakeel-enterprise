@@ -48,20 +48,20 @@ export default async function AdminBlogsPage() {
                       <span className="px-3 py-1 bg-sage/10 text-sage text-xs font-bold rounded-full">{blog.category}</span>
                     </td>
                     <td className="px-6 py-4 text-gray-500">
-                      {new Date(blog.created_at || '').toLocaleDateString()}
+                      {blog.created_at ? blog.created_at.split('T')[0] : 'N/A'}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <Link href={`/blog/${blog.slug}`} target="_blank">
-                          <Button variant="outline" size="icon" className="w-8 h-8 rounded-lg border-gray-200 text-gray-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50">
+                        <Button asChild variant="outline" size="icon" className="w-8 h-8 rounded-lg border-gray-200 text-gray-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50">
+                          <Link href={`/blog/${blog.slug}`} target="_blank">
                             <ExternalLink className="w-4 h-4" />
-                          </Button>
-                        </Link>
-                        <Link href={`/admin/blogs/${blog.id}/edit`}>
-                          <Button variant="outline" size="icon" className="w-8 h-8 rounded-lg border-gray-200 text-gray-500 hover:text-amber hover:border-amber/30 hover:bg-amber/10">
+                          </Link>
+                        </Button>
+                        <Button asChild variant="outline" size="icon" className="w-8 h-8 rounded-lg border-gray-200 text-gray-500 hover:text-amber hover:border-amber/30 hover:bg-amber/10">
+                          <Link href={`/admin/blogs/${blog.id}/edit`}>
                             <Edit className="w-4 h-4" />
-                          </Button>
-                        </Link>
+                          </Link>
+                        </Button>
                         <DeleteButton id={blog.id} deleteAction={deleteBlog} itemName={blog.title} />
                       </div>
                     </td>

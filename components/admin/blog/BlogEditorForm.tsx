@@ -5,7 +5,16 @@ import { Input } from '@/components/ui/input';
 import { RichTextEditor, RichTextEditorHandle } from '@/components/editor/rich-text-editor';
 import Link from 'next/link';
 import { SubmitButton } from '@/components/admin/SubmitButton';
+import { ImagePicker } from '@/components/admin/blog/ImagePicker';
+import { BlogPreview } from '@/components/admin/blog/BlogPreview';
+import { SocialPreview } from '@/components/admin/blog/SocialPreview';
+import { SEOValidator } from '@/components/admin/blog/SEOValidator';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { saveBlogDraft } from '@/app/admin/actions';
+
 import {
+  Eye,
   Sparkles,
   Wand2,
   Search,
@@ -25,6 +34,7 @@ import {
   Minimize2,
   Maximize2,
   Zap,
+  Trash2,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────
@@ -42,6 +52,7 @@ interface Blog {
   slug?: string | null;
   category?: string | null;
   thumbnail?: string | null;
+  og_image?: string | null;
   content?: string | null;
   meta_title?: string | null;
   meta_description?: string | null;
@@ -114,12 +125,14 @@ function ScoreBar({ label, score, color }: { label: string; score: number; color
 
 function AiButton({
   onClick,
+  onCancel,
   status,
   icon: Icon,
   label,
   small = false,
 }: {
   onClick: () => void;
+  onCancel?: () => void;
   status: AiStatus;
   icon: React.ElementType;
   label: string;
@@ -128,34 +141,46 @@ function AiButton({
   const isLoading = status === 'loading';
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={isLoading}
-      className={`
-        inline-flex items-center gap-1.5 font-semibold rounded-lg border transition-all duration-150
-        ${small
-          ? 'px-2.5 py-1 text-xs'
-          : 'px-3 py-2 text-xs w-full justify-center'}
-        ${status === 'success'
-          ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-          : status === 'error'
-          ? 'bg-red-50 border-red-200 text-red-700'
-          : 'bg-white border-gray-200 text-gray-700 hover:bg-violet-50 hover:border-violet-300 hover:text-violet-700'}
-        ${isLoading ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}
-      `}
-    >
-      {isLoading ? (
-        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-      ) : status === 'success' ? (
-        <CheckCircle2 className="w-3.5 h-3.5" />
-      ) : status === 'error' ? (
-        <AlertCircle className="w-3.5 h-3.5" />
-      ) : (
-        <Icon className="w-3.5 h-3.5" />
+    <div className="flex gap-2 w-full">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={isLoading}
+        className={`
+          inline-flex items-center gap-1.5 font-semibold rounded-lg border transition-all duration-150 flex-1
+          ${small
+            ? 'px-2.5 py-1 text-xs'
+            : 'px-3 py-2 text-xs w-full justify-center'}
+          ${status === 'success'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+            : status === 'error'
+            ? 'bg-red-50 border-red-200 text-red-700'
+            : 'bg-white border-gray-200 text-gray-700 hover:bg-violet-50 hover:border-violet-300 hover:text-violet-700'}
+          ${isLoading ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}
+        `}
+      >
+        {isLoading ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        ) : status === 'success' ? (
+          <CheckCircle2 className="w-3.5 h-3.5" />
+        ) : status === 'error' ? (
+          <AlertCircle className="w-3.5 h-3.5" />
+        ) : (
+          <Icon className="w-3.5 h-3.5" />
+        )}
+        {label}
+      </button>
+      {isLoading && onCancel && (
+        <button
+          type="button"
+          onClick={onCancel}
+          className={`flex-shrink-0 flex items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors ${small ? 'w-7 h-7' : 'w-9 h-9'}`}
+          title="Cancel Generation"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
       )}
-      {label}
-    </button>
+    </div>
   );
 }
 
@@ -169,6 +194,7 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
   const [slug, setSlug] = useState(blog?.slug ?? '');
   const [category, setCategory] = useState(blog?.category ?? '');
   const [thumbnail, setThumbnail] = useState(blog?.thumbnail ?? '');
+  const [ogImage, setOgImage] = useState(blog?.og_image ?? '');
   const [metaTitle, setMetaTitle] = useState(blog?.meta_title ?? '');
   const [metaDesc, setMetaDesc] = useState(blog?.meta_description ?? '');
   const [tags, setTags] = useState(blog?.tags?.join(', ') ?? '');
@@ -179,6 +205,12 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [panelOpen, setPanelOpen] = useState(true);
   const [activeSection, setActiveSection] = useState<string | null>('generate');
+
+  // Main Tabs
+  const [mainTab, setMainTab] = useState<'editor' | 'preview' | 'social' | 'seo'>('editor');
+
+  // Image picker modal
+  const [showImagePicker, setShowImagePicker] = useState(false);
 
   // Image preview
   const [thumbnailPreview, setThumbnailPreview] = useState(blog?.thumbnail ?? '');
@@ -197,6 +229,7 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
 
   // Editor ref for programmatic content injection
   const editorRef = useRef<RichTextEditorHandle>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   // Auto-generate slug from title
   const autoSlug = useCallback((t: string) => {
@@ -227,33 +260,107 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
 
   // ── AI Actions ──────────────────────────────────────────
 
+  const abortControllers = useRef<{ [key: string]: AbortController }>({});
+
+  const cancelAiFetch = (type: string) => {
+    if (abortControllers.current[type]) {
+      abortControllers.current[type].abort();
+      delete abortControllers.current[type];
+    }
+  };
+
+  const handleAiError = (err: any) => {
+    if (err.name === 'AbortError') {
+      toast.info('AI generation cancelled');
+      return;
+    }
+    try {
+      if (err.message === 'Failed to fetch' || err.message.includes('Network')) {
+        toast.error('Unable to connect to the AI service.');
+        return;
+      }
+      
+      const parsed = JSON.parse(err.message);
+      if (parsed.status === 503 || parsed.status === 504) {
+        toast.error('AI service is temporarily busy due to high demand. Please try again in a few moments.');
+      } else if (parsed.status === 429) {
+        toast.error('Rate limit reached. Please wait before generating another blog.');
+      } else if (parsed.status >= 500) {
+        toast.error('Unexpected AI server error.');
+      } else {
+        toast.error('An unexpected error occurred during AI generation.');
+      }
+    } catch {
+       toast.error('An unexpected error occurred during AI generation.');
+    }
+  };
+
+  const aiFetchWithRetry = async (url: string, body: any, type: string) => {
+    cancelAiFetch(type);
+    const controller = new AbortController();
+    abortControllers.current[type] = controller;
+
+    let attempt = 1;
+    const maxAttempts = 3;
+
+    while (attempt <= maxAttempts) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+        
+        if (res.ok) {
+          return await res.json();
+        }
+
+        const errorText = await res.text();
+        const status = res.status;
+
+        if (attempt === maxAttempts || (![503, 504, 429].includes(status) && status >= 400)) {
+           throw new Error(JSON.stringify({ status, message: errorText }));
+        }
+
+        const delay = attempt === 1 ? 2000 : 4000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        attempt++;
+      } catch (err: any) {
+        if (err.name === 'AbortError') {
+          throw err;
+        }
+        if (attempt === maxAttempts || err.message === 'Failed to fetch') {
+           throw err;
+        }
+        const delay = attempt === 1 ? 2000 : 4000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        attempt++;
+      }
+    }
+  };
+
   const generateBlog = async () => {
     const topic = aiTopic || title;
     if (!topic.trim()) return;
     setStatusBlog('loading');
     try {
-      const res = await fetch('/api/ai/generate-blog', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, template: selectedTemplate }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      setTitle(data.title ?? '');
-      setSlug(data.slug ?? autoSlug(data.title ?? ''));
-      setCategory(data.category ?? '');
-      setMetaTitle(data.metaTitle ?? '');
-      setMetaDesc(data.metaDescription ?? '');
-      setTags(Array.isArray(data.tags) ? data.tags.join(', ') : '');
-      // Inject into editor
-      if (editorRef.current) {
-        editorRef.current.setContent(data.content ?? '');
+      const data = await aiFetchWithRetry('/api/ai/generate-blog', { topic, template: selectedTemplate }, 'blog');
+      if (!data) return; // Cancelled
+      setTitle(data.title ?? title);
+      setSlug(data.slug ?? autoSlug(data.title ?? title));
+      setCategory(data.category ?? category);
+      setMetaTitle(data.metaTitle ?? metaTitle);
+      setMetaDesc(data.metaDescription ?? metaDesc);
+      setTags(Array.isArray(data.tags) ? data.tags.join(', ') : tags);
+      if (editorRef.current && data.content) {
+        editorRef.current.setContent(data.content);
       }
-      setContent(data.content ?? '');
+      if (data.content) setContent(data.content);
       setStatusBlog('success');
       setTimeout(() => setStatusBlog('idle'), 3000);
     } catch (err) {
-      console.error(err);
+      handleAiError(err);
       setStatusBlog('error');
       setTimeout(() => setStatusBlog('idle'), 3000);
     }
@@ -263,20 +370,15 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
     if (!title.trim()) return;
     setStatusSeo('loading');
     try {
-      const res = await fetch('/api/ai/generate-seo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      setMetaTitle(data.metaTitle ?? '');
-      setMetaDesc(data.metaDescription ?? '');
-      setTags(Array.isArray(data.tags) ? data.tags.join(', ') : '');
+      const data = await aiFetchWithRetry('/api/ai/generate-seo', { title, content }, 'seo');
+      if (!data) return;
+      setMetaTitle(data.metaTitle ?? metaTitle);
+      setMetaDesc(data.metaDescription ?? metaDesc);
+      setTags(Array.isArray(data.tags) ? data.tags.join(', ') : tags);
       setStatusSeo('success');
       setTimeout(() => setStatusSeo('idle'), 3000);
     } catch (err) {
-      console.error(err);
+      handleAiError(err);
       setStatusSeo('error');
       setTimeout(() => setStatusSeo('idle'), 3000);
     }
@@ -287,19 +389,14 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
     if (!topic.trim()) return;
     setStatusImage('loading');
     try {
-      const res = await fetch('/api/ai/generate-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      setThumbnail(data.imageUrl ?? '');
-      setThumbnailPreview(data.imageUrl ?? '');
+      const data = await aiFetchWithRetry('/api/ai/generate-image', { topic }, 'image');
+      if (!data) return;
+      setThumbnail(data.imageUrl ?? thumbnail);
+      setThumbnailPreview(data.imageUrl ?? thumbnailPreview);
       setStatusImage('success');
       setTimeout(() => setStatusImage('idle'), 3000);
     } catch (err) {
-      console.error(err);
+      handleAiError(err);
       setStatusImage('error');
       setTimeout(() => setStatusImage('idle'), 3000);
     }
@@ -310,19 +407,14 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
     if (!topic.trim()) return;
     setStatusOutline('loading');
     try {
-      const res = await fetch('/api/ai/generate-outline', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
+      const data = await aiFetchWithRetry('/api/ai/generate-outline', { topic }, 'outline');
+      if (!data) return;
       setOutline(data.outline ?? []);
       setOutlineModal(true);
       setStatusOutline('success');
       setTimeout(() => setStatusOutline('idle'), 3000);
     } catch (err) {
-      console.error(err);
+      handleAiError(err);
       setStatusOutline('error');
       setTimeout(() => setStatusOutline('idle'), 3000);
     }
@@ -347,13 +439,8 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
     if (!title.trim()) return;
     setStatusFaqs('loading');
     try {
-      const res = await fetch('/api/ai/generate-faqs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
+      const data = await aiFetchWithRetry('/api/ai/generate-faqs', { title, content }, 'faqs');
+      if (!data) return;
       const newContent = (content || '') + '\n' + (data.faqsHtml ?? '');
       if (editorRef.current) {
         editorRef.current.setContent(newContent);
@@ -362,28 +449,21 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
       setStatusFaqs('success');
       setTimeout(() => setStatusFaqs('idle'), 3000);
     } catch (err) {
-      console.error(err);
+      handleAiError(err);
       setStatusFaqs('error');
       setTimeout(() => setStatusFaqs('idle'), 3000);
     }
   };
 
   const rewrite = async (mode: string) => {
-    // Use selected text from the editor if available
     const selectedText = window.getSelection()?.toString() ?? '';
     const textToRewrite = selectedText || content.replace(/<[^>]*>/g, ' ').trim();
     if (!textToRewrite) return;
     setStatusRewrite('loading');
     try {
-      const res = await fetch('/api/ai/rewrite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: textToRewrite, mode }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
+      const data = await aiFetchWithRetry('/api/ai/rewrite', { text: textToRewrite, mode }, 'rewrite');
+      if (!data) return;
       if (selectedText && editorRef.current) {
-        // Replace only selected text
         editorRef.current.insertAtCursor(data.result ?? '');
       } else if (editorRef.current) {
         editorRef.current.setContent(data.result ?? '');
@@ -392,13 +472,46 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
       setStatusRewrite('success');
       setTimeout(() => setStatusRewrite('idle'), 3000);
     } catch (err) {
-      console.error(err);
+      handleAiError(err);
       setStatusRewrite('error');
       setTimeout(() => setStatusRewrite('idle'), 3000);
     }
   };
 
   const toggleSection = (s: string) => setActiveSection(activeSection === s ? null : s);
+
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+
+  const handlePreviewDraft = async () => {
+    if (!formRef.current) return;
+    setIsPreviewLoading(true);
+
+    try {
+      if (!blog?.id) {
+        const formData = new FormData(formRef.current);
+        if (!formData.get('id')) formData.delete('id');
+        const res = await saveBlogDraft(formData);
+        
+        if (res.success && res.id) {
+          window.open(`/preview/blog/${res.id}`, '_blank');
+        } else {
+          toast.error("Unable to preview. Please save the draft first.");
+        }
+      } else {
+        const formData = new FormData(formRef.current);
+        const res = await saveBlogDraft(formData);
+        if (res.success) {
+          window.open(`/preview/blog/${blog.id}`, '_blank');
+        } else {
+          toast.error("Unable to preview. Please save the draft first.");
+        }
+      }
+    } catch {
+      toast.error("Unable to preview. Please save the draft first.");
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
 
   // ── Render ───────────────────────────────────────────────
 
@@ -461,9 +574,43 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
         </div>
       )}
 
-      <form action={action} className="flex gap-6 items-start">
-        {/* ── LEFT: Existing Form Fields (unchanged layout) ── */}
+      {/* Main Tabs */}
+      <div className="flex border-b border-gray-200 mb-6 gap-6">
+        <button
+          type="button"
+          onClick={() => setMainTab('editor')}
+          className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${mainTab === 'editor' ? 'border-charcoal text-charcoal' : 'border-transparent text-gray-500 hover:text-charcoal'}`}
+        >
+          Editor
+        </button>
+        <button
+          type="button"
+          onClick={() => setMainTab('preview')}
+          className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${mainTab === 'preview' ? 'border-charcoal text-charcoal' : 'border-transparent text-gray-500 hover:text-charcoal'}`}
+        >
+          Live Preview
+        </button>
+        <button
+          type="button"
+          onClick={() => setMainTab('social')}
+          className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${mainTab === 'social' ? 'border-charcoal text-charcoal' : 'border-transparent text-gray-500 hover:text-charcoal'}`}
+        >
+          Social Preview
+        </button>
+        <button
+          type="button"
+          onClick={() => setMainTab('seo')}
+          className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${mainTab === 'seo' ? 'border-charcoal text-charcoal' : 'border-transparent text-gray-500 hover:text-charcoal'}`}
+        >
+          SEO Validator
+        </button>
+      </div>
+
+      <form ref={formRef} action={action} className="flex gap-6 items-start">
+        {/* ── LEFT: Main Content Area ── */}
         <div className="flex-1 min-w-0 space-y-6">
+
+          <div className={`space-y-6 ${mainTab === 'editor' ? 'block' : 'hidden'}`}>
 
           {/* Title + Slug */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -487,14 +634,13 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
                 required
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
-                placeholder="e.g. compliance-rules-2026"
+                placeholder="e.g. new-compliance-rules-2026"
                 className="bg-gray-50 border-gray-200"
               />
             </div>
           </div>
 
-          {/* Category, Author, Thumbnail */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label htmlFor="category" className="text-sm font-semibold text-charcoal">Category</label>
               <Input
@@ -502,7 +648,7 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
                 name="category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g. Legal, Tax, Updates"
+                placeholder="e.g. Taxation"
                 className="bg-gray-50 border-gray-200"
               />
             </div>
@@ -512,39 +658,78 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
                 id="author_id"
                 name="author_id"
                 defaultValue={blog?.author_id ?? ''}
-                className="w-full h-10 px-3 py-2 rounded-md border border-gray-200 bg-gray-50 text-sm outline-none focus:border-sage focus:ring-1 focus:ring-sage/20 transition-all"
+                className="w-full h-10 px-3 rounded-md border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-sage focus:border-transparent"
               >
                 <option value="">Select Author...</option>
-                {authors.map((author) => (
-                  <option key={author.id} value={author.id}>{author.name}</option>
+                {authors.map(a => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </select>
             </div>
-            <div className="space-y-2">
-              <label htmlFor="thumbnail" className="text-sm font-semibold text-charcoal">Thumbnail URL</label>
-              <Input
-                id="thumbnail"
-                name="thumbnail"
-                value={thumbnail}
-                onChange={(e) => setThumbnail(e.target.value)}
-                placeholder="https://..."
-                className="bg-gray-50 border-gray-200"
-              />
-            </div>
           </div>
 
-          {/* Thumbnail preview */}
-          {thumbnailPreview && (
-            <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={thumbnailPreview}
-                alt="Thumbnail preview"
-                className="w-full h-48 object-cover"
-                onError={() => setThumbnailPreview('')}
-              />
+          {/* Featured Image */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-charcoal">Featured Image</label>
+            <input type="hidden" name="thumbnail" value={thumbnail} />
+            <input type="hidden" name="og_image" id="og_image" value={ogImage} />
+            
+            <div className="flex gap-4 items-start">
+              {thumbnailPreview && (
+                <div className="w-48 h-32 rounded-xl border border-gray-200 overflow-hidden relative group shrink-0 shadow-sm">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <button type="button" onClick={() => { setThumbnail(''); setThumbnailPreview(''); }} className="p-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex-1">
+                <button
+                  type="button"
+                  onClick={() => setShowImagePicker(true)}
+                  className="px-4 py-2 bg-charcoal text-white text-sm font-semibold rounded hover:bg-sage transition-colors"
+                >
+                  Choose from Media Library
+                </button>
+              </div>
+
+              {/* Inline Image Picker (simulating Modal) */}
+              {showImagePicker && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                  <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
+                    <button type="button" onClick={() => setShowImagePicker(false)} className="absolute top-4 right-4 text-gray-500 hover:text-charcoal z-10 bg-white rounded-full p-1 shadow">
+                      <X className="w-5 h-5" />
+                    </button>
+                    <div className="p-6">
+                      <h2 className="text-xl font-bold mb-4">Select Image</h2>
+                      <ImagePicker 
+                        currentUrl={thumbnail}
+                        onSelect={(mediaId, url) => {
+                          setThumbnail(url);
+                          setThumbnailPreview(url);
+                          // Auto-fill og_image if empty
+                          if (!ogImage) {
+                            setOgImage(url);
+                          }
+                          setShowImagePicker(false);
+                        }}
+                        onInsert={(url, alt) => {
+                          if (editorRef.current) {
+                            editorRef.current.insertAtCursor(`<img src="${url}" alt="${alt}" />`);
+                          }
+                          setShowImagePicker(false);
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Content */}
           <div className="space-y-2">
@@ -556,6 +741,7 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
               defaultValue={blog?.content ?? ''}
               placeholder="Write your blog post content here..."
               onContentChange={setContent}
+              onOpenImagePicker={() => setShowImagePicker(true)}
             />
           </div>
 
@@ -609,12 +795,65 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
               Featured
             </label>
           </div>
+          </div>
 
-          {/* Form Actions */}
-          <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
+          {mainTab === 'preview' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <BlogPreview
+                title={title}
+                category={category}
+                content={content}
+                thumbnail={thumbnail}
+                authorName={authors.find(a => a.id === blog?.author_id)?.name || 'Vakeel Team'}
+                authorAvatar={null}
+                tags={tags.split(',').map(t => t.trim()).filter(Boolean)}
+                readingTime={quality.wordCount ? Math.ceil(quality.wordCount / 200) : 5}
+              />
+            </div>
+          )}
+
+          {mainTab === 'social' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <SocialPreview
+                title={metaTitle || title}
+                description={metaDesc}
+                url={`https://vaakil.com/blog/${slug}`}
+                imageUrl={thumbnail}
+              />
+            </div>
+          )}
+
+          {mainTab === 'seo' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <SEOValidator
+                title={metaTitle || title}
+                metaDescription={metaDesc}
+                content={content}
+                hasFeaturedImage={!!thumbnail}
+                hasOgImage={!!thumbnail} // Assume true if thumbnail is present due to auto-fill
+                hasFaq={content.toLowerCase().includes('faq') || content.toLowerCase().includes('frequently asked questions')}
+                hasSchema={content.includes('application/ld+json') || metaDesc.length > 0} // Simplification for schema presence
+                targetKeyword={tags.split(',')[0]?.trim() || category}
+                internalLinksCount={0}
+              />
+            </div>
+          )}
+
+          {/* Form Actions (always visible at bottom) */}
+          <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 mt-6">
             <Link href="/admin/blogs">
               <div className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md transition-colors">Cancel</div>
             </Link>
+            <Button 
+               type="button"
+               variant="outline" 
+               className="text-gray-600 bg-white"
+               onClick={handlePreviewDraft}
+               disabled={isPreviewLoading}
+            >
+              {isPreviewLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Eye className="w-4 h-4 mr-2" />}
+              {isPreviewLoading ? 'Saving...' : 'Preview Draft'}
+            </Button>
             <SubmitButton loadingText={mode === 'new' ? 'Publishing...' : 'Updating...'}>
               {mode === 'new' ? 'Publish Post' : 'Save Changes'}
             </SubmitButton>
@@ -675,9 +914,9 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
                 </button>
                 {activeSection === 'generate' && (
                   <div className="px-3 pb-3 space-y-2">
-                    <AiButton onClick={generateBlog} status={statusBlog} icon={Wand2} label="Generate Full Blog" />
-                    <AiButton onClick={generateOutline} status={statusOutline} icon={List} label="Generate Outline" />
-                    <AiButton onClick={generateFaqs} status={statusFaqs} icon={MessageSquare} label="Generate FAQs" />
+                    <AiButton onCancel={() => cancelAiFetch('blog')} onClick={generateBlog} status={statusBlog} icon={Wand2} label="Generate Full Blog" />
+                    <AiButton onCancel={() => cancelAiFetch('outline')} onClick={generateOutline} status={statusOutline} icon={List} label="Generate Outline" />
+                    <AiButton onCancel={() => cancelAiFetch('faqs')} onClick={generateFaqs} status={statusFaqs} icon={MessageSquare} label="Generate FAQs" />
                   </div>
                 )}
               </div>
@@ -694,7 +933,7 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
                 </button>
                 {activeSection === 'seo' && (
                   <div className="px-3 pb-3 space-y-2">
-                    <AiButton onClick={generateSeo} status={statusSeo} icon={Search} label="Generate SEO Metadata" />
+                    <AiButton onCancel={() => cancelAiFetch('seo')} onClick={generateSeo} status={statusSeo} icon={Search} label="Generate SEO Metadata" />
                     {metaTitle && (
                       <div className="text-xs bg-blue-50 rounded-lg p-2 text-blue-800 space-y-1">
                         <div><span className="font-semibold">Title:</span> {metaTitle.slice(0, 50)}{metaTitle.length > 50 ? '…' : ''}</div>
@@ -717,7 +956,7 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
                 </button>
                 {activeSection === 'image' && (
                   <div className="px-3 pb-3 space-y-2">
-                    <AiButton onClick={generateImage} status={statusImage} icon={ImageIcon} label="Generate Featured Image" />
+                    <AiButton onCancel={() => cancelAiFetch('image')} onClick={generateImage} status={statusImage} icon={Sparkles} label="Auto-Generate Cover" />
                     {thumbnailPreview && (
                       <div className="rounded-lg overflow-hidden border border-gray-200">
                         {/* eslint-disable-next-line @next/next/no-img-element */}

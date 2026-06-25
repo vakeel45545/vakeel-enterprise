@@ -4,6 +4,7 @@ import { verifyAdminAndGetClient } from '@/lib/supabase/admin';
 import type { Database } from '@/lib/supabase/database.types';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { dispatchWebhook } from '@/lib/webhooks/dispatcher';
 
 // ─────────────────────────────────────────────
 // SERVICES
@@ -88,6 +89,8 @@ export async function updateService(id: string, formData: FormData) {
   const { error } = await supabase.from('services').update(data).eq('id', id);
   if (error) throw new Error(error.message);
 
+  dispatchWebhook('service.updated', { id, ...data });
+
   revalidatePath('/admin/services');
   revalidatePath(`/services/${data.slug}`);
   redirect('/admin/services');
@@ -167,8 +170,24 @@ export async function createBlog(formData: FormData) {
     featured: formData.get('featured') === 'on' || formData.get('featured') === 'true',
   };
 
+  // If og_image is empty, auto-populate from thumbnail
+  if (!data.og_image && data.thumbnail) {
+    data.og_image = data.thumbnail;
+  }
+
+  console.log("BLOG CREATE PAYLOAD", {
+    thumbnail: data.thumbnail,
+    og_image: data.og_image
+  });
+  console.log("FEATURED IMAGE", formData.get("thumbnail"));
+  console.log("OG IMAGE", formData.get("og_image"));
+
   const { error } = await supabase.from('blogs').insert([data]);
   if (error) throw new Error(error.message);
+
+  if (data.published) {
+    dispatchWebhook('blog.published', data);
+  }
 
   revalidatePath('/admin/blogs');
   revalidatePath('/blog');
@@ -196,8 +215,15 @@ export async function updateBlog(id: string, formData: FormData) {
     updated_at: new Date().toISOString(),
   };
 
+  console.log("FEATURED IMAGE (UPDATE)", formData.get("thumbnail"));
+  console.log("OG IMAGE (UPDATE)", formData.get("og_image"));
+
   const { error } = await supabase.from('blogs').update(data).eq('id', id);
   if (error) throw new Error(error.message);
+
+  if (data.published) {
+    dispatchWebhook('blog.published', { id, ...data });
+  }
 
   revalidatePath('/admin/blogs');
   revalidatePath('/blog');
@@ -209,8 +235,48 @@ export async function deleteBlog(id: string) {
   const supabase = await verifyAdminAndGetClient();
   const { error } = await supabase.from('blogs').delete().eq('id', id);
   if (error) throw new Error(error.message);
-  revalidatePath('/admin/blogs');
   revalidatePath('/blog');
+}
+
+export async function saveBlogDraft(formData: FormData): Promise<{ success: boolean; id?: string; error?: string }> {
+  try {
+    const supabase = await verifyAdminAndGetClient();
+    const id = formData.get('id') as string | null;
+    const tagsRaw = formData.get('tags') as string;
+
+    const data: any = {
+      title: formData.get('title') as string,
+      slug: formData.get('slug') as string,
+      category: formData.get('category') as string || null,
+      thumbnail: formData.get('thumbnail') as string || null,
+      og_image: formData.get('og_image') as string || null,
+      content: formData.get('content') as string || null,
+      meta_title: formData.get('meta_title') as string || null,
+      meta_description: formData.get('meta_description') as string || null,
+      author_id: formData.get('author_id') as string || null,
+      tags: tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : null,
+      reading_time: parseInt(formData.get('reading_time') as string) || null,
+      published: formData.get('published') === 'on' || formData.get('published') === 'true',
+      featured: formData.get('featured') === 'on' || formData.get('featured') === 'true',
+    };
+
+    if (!data.og_image && data.thumbnail) {
+      data.og_image = data.thumbnail;
+    }
+
+    if (id) {
+      data.updated_at = new Date().toISOString();
+      const { error } = await supabase.from('blogs').update(data).eq('id', id);
+      if (error) throw new Error(error.message);
+      return { success: true, id };
+    } else {
+      const { data: inserted, error } = await supabase.from('blogs').insert([data]).select('id').single();
+      if (error) throw new Error(error.message);
+      return { success: true, id: inserted.id };
+    }
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -266,6 +332,9 @@ export async function updateLeadStatus(id: string, status: string) {
 
   const { error } = await supabase.from('leads').update(data).eq('id', id);
   if (error) throw new Error(error.message);
+
+  dispatchWebhook('lead.updated', { id, status });
+
   revalidatePath('/admin/leads');
 }
 

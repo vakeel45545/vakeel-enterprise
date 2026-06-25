@@ -55,11 +55,11 @@ export default async function AdminFaqsPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <Link href={`/admin/faqs/${faq.id}/edit`}>
-                          <Button variant="outline" size="icon" className="w-8 h-8 rounded-lg border-gray-200 text-gray-500 hover:text-amber hover:border-amber/30 hover:bg-amber/10">
+                        <Button asChild variant="outline" size="icon" className="w-8 h-8 rounded-lg border-gray-200 text-gray-500 hover:text-amber hover:border-amber/30 hover:bg-amber/10">
+                          <Link href={`/admin/faqs/${faq.id}/edit`}>
                             <Edit className="w-4 h-4" />
-                          </Button>
-                        </Link>
+                          </Link>
+                        </Button>
                         <DeleteButton id={faq.id} deleteAction={deleteFaq} itemName="this FAQ" />
                       </div>
                     </td>

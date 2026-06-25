@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -83,6 +83,12 @@ export type Database = {
           thumbnail: string | null
           title: string
           updated_at: string | null
+          status: string | null
+          scheduled_at: string | null
+          seo_score: number | null
+          featured_image_id: string | null
+          og_image_id: string | null
+          published_at: string | null
         }
         Insert: {
           author_id?: string | null
@@ -101,6 +107,12 @@ export type Database = {
           thumbnail?: string | null
           title: string
           updated_at?: string | null
+          status?: string | null
+          scheduled_at?: string | null
+          seo_score?: number | null
+          featured_image_id?: string | null
+          og_image_id?: string | null
+          published_at?: string | null
         }
         Update: {
           author_id?: string | null
@@ -119,6 +131,12 @@ export type Database = {
           thumbnail?: string | null
           title?: string
           updated_at?: string | null
+          status?: string | null
+          scheduled_at?: string | null
+          seo_score?: number | null
+          featured_image_id?: string | null
+          og_image_id?: string | null
+          published_at?: string | null
         }
         Relationships: [
           {
@@ -317,6 +335,59 @@ export type Database = {
           phone?: string | null
           service?: string | null
           status?: string | null
+        }
+      }
+      media_library: {
+        Row: {
+          id: string
+          filename: string
+          url: string
+          source: string | null
+          alt_text: string | null
+          mime_type: string | null
+          size_bytes: number | null
+          width: number | null
+          height: number | null
+          tags: string[] | null
+          uploaded_by: string | null
+          created_at: string | null
+          image_prompt: string | null
+          credits: string | null
+          license_url: string | null
+        }
+        Insert: {
+          id?: string
+          filename: string
+          url: string
+          source?: string | null
+          alt_text?: string | null
+          mime_type?: string | null
+          size_bytes?: number | null
+          width?: number | null
+          height?: number | null
+          tags?: string[] | null
+          uploaded_by?: string | null
+          created_at?: string | null
+          image_prompt?: string | null
+          credits?: string | null
+          license_url?: string | null
+        }
+        Update: {
+          id?: string
+          filename?: string
+          url?: string
+          source?: string | null
+          alt_text?: string | null
+          mime_type?: string | null
+          size_bytes?: number | null
+          width?: number | null
+          height?: number | null
+          tags?: string[] | null
+          uploaded_by?: string | null
+          created_at?: string | null
+          image_prompt?: string | null
+          credits?: string | null
+          license_url?: string | null
         }
         Relationships: []
       }

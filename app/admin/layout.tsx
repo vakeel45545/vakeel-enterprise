@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Settings, FileText, MapPin, Users, HelpCircle, LayoutDashboard, LogOut, Navigation, Menu, Footprints, BookOpen, Activity } from 'lucide-react';
+import { Settings, FileText, MapPin, Users, HelpCircle, LayoutDashboard, LogOut, Navigation, Menu, Footprints, BookOpen, Activity, Building2, Webhook, Clock, ImageIcon, Zap } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -19,6 +19,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const sidebarLinks = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+    { name: 'Media Library', href: '/admin/media', icon: ImageIcon },
+    { name: 'Industries', href: '/admin/industries', icon: Building2 },
     { name: 'Services', href: '/admin/services', icon: FileText },
     { name: 'Cities', href: '/admin/cities', icon: MapPin },
     { name: 'Blogs', href: '/admin/blogs', icon: FileText },
@@ -27,6 +29,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { name: 'Leads', href: '/admin/leads', icon: Users },
     { name: 'Navigation', href: '/admin/navigation', icon: Navigation },
     { name: 'Footer', href: '/admin/footer', icon: Footprints },
+    { name: 'Webhooks', href: '/admin/webhooks', icon: Webhook },
+    { name: 'Cron Jobs', href: '/admin/cron', icon: Clock },
+    { name: 'Automation', href: '/admin/automation', icon: Zap },
     { name: 'System', href: '/admin/system', icon: Activity },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];

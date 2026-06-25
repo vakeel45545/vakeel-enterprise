@@ -275,6 +275,26 @@ export async function getBlogs(limit?: number) {
   }
 }
 
+export async function getBlogById(id: string) {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('blogs')
+      .select('*, author:authors(*)')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      console.error(`[API] Error fetching blog by ID "${id}":`, error.message);
+      return null;
+    }
+    return data;
+  } catch (e) {
+    console.error(`[API] Exception in getBlogById("${id}"):`, e);
+    return null;
+  }
+}
+
 export async function getBlogBySlug(slug: string) {
   try {
     const supabase = await createClient();
