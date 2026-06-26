@@ -7,15 +7,32 @@ const CRON_SECRET = process.env.CRON_SECRET || 'vakeel-dev-cron-secret-2026';
 const APP_URL = process.env.APP_URL || 'http://localhost:3000';
 
 /**
- * Trigger a full blog generation immediately via the cron endpoint.
+ * Trigger a full blog generation asynchronously via the worker endpoint.
  */
 export async function triggerBlogGeneration(): Promise<{ success: boolean; error?: string }> {
-  await verifyAdminAndGetClient(); // Auth check
+  const supabase = await verifyAdminAndGetClient(); // Auth check
 
   try {
-    const res = await fetch(`${APP_URL}/api/cron`, {
-      method: 'GET',
-      headers: { 'Authorization': `Bearer ${CRON_SECRET}` },
+    // Find the generate_blog job
+    const { data: job } = await supabase
+      .from('cron_jobs')
+      .select('id')
+      .eq('job_type', 'generate_blog')
+      .limit(1)
+      .maybeSingle();
+
+    if (!job) {
+      return { success: false, error: 'Generate Blog cron job not found in registry.' };
+    }
+
+    // Dispatch the worker asynchronously
+    const res = await fetch(`${APP_URL}/api/cron/worker`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${CRON_SECRET}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ job_id: job.id }),
     });
 
     if (!res.ok) {

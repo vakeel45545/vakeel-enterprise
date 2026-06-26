@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Clock, Activity, CheckCircle2, XCircle, Play } from 'lucide-react';
+import { Plus, Clock, Activity, CheckCircle2, XCircle, Play, History, Edit2 } from 'lucide-react';
 import { DeleteButton } from '@/components/admin/DeleteButton';
 import { deleteCronJob, triggerCronNow } from './actions';
+import { toggleCronJob } from '../automation/actions';
+import Link from 'next/link';
 
 export default async function AdminCronPage() {
   const supabase = await createClient();
@@ -25,9 +27,11 @@ export default async function AdminCronPage() {
               <Play className="w-4 h-4 mr-2" /> Run All Now
             </Button>
           </form>
-          <Button className="bg-charcoal text-white hover:bg-sage transition-colors rounded-xl font-bold shadow-premium">
-            <Plus className="w-4 h-4 mr-2" /> New Job
-          </Button>
+          <Link href="/admin/cron/new">
+            <Button className="bg-charcoal text-white hover:bg-sage transition-colors rounded-xl font-bold shadow-premium">
+              <Plus className="w-4 h-4 mr-2" /> New Job
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -36,6 +40,11 @@ export default async function AdminCronPage() {
           <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-charcoal mb-2">No cron jobs</h3>
           <p className="text-gray-500 mb-6">Create a job to automate background tasks like SEO audits and scheduled publishing.</p>
+          <Link href="/admin/cron/new">
+            <Button className="bg-charcoal text-white hover:bg-sage rounded-xl font-bold">
+              <Plus className="w-4 h-4 mr-2" /> New Job
+            </Button>
+          </Link>
         </Card>
       ) : (
         <div className="space-y-4">
@@ -84,6 +93,26 @@ export default async function AdminCronPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  <form action={async () => {
+                    "use server";
+                    await toggleCronJob(job.id, !job.active);
+                  }}>
+                    <Button type="submit" variant="outline" size="sm" className={`rounded-lg ${job.active ? 'text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200' : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border-emerald-200'}`}>
+                      {job.active ? 'Disable' : 'Enable'}
+                    </Button>
+                  </form>
+                  <Link href={`/admin/cron/${job.id}/history`}>
+                    <Button variant="outline" size="sm" className="rounded-lg">
+                      <History className="w-4 h-4 mr-1" />
+                      History
+                    </Button>
+                  </Link>
+                  <Link href={`/admin/cron/${job.id}/edit`}>
+                    <Button variant="outline" size="sm" className="rounded-lg">
+                      <Edit2 className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                  </Link>
                   <DeleteButton id={job.id} deleteAction={deleteCronJob} itemName="job" />
                 </div>
               </div>

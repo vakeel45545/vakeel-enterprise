@@ -47,9 +47,28 @@ export async function uploadToMediaLibrary(params: UploadMediaParams) {
   }
 
   const { uploadImage } = await import('./storage');
+  
+  // 3. Compute SHA-256 hash to prevent duplicates
+  const crypto = await import('crypto');
+  const fileHash = crypto.createHash('sha256').update(buffer).digest('hex');
+
+  // Check if this file already exists in the database
+  const { data: existingMedia } = await supabase
+    .from('media_library')
+    .select('*')
+    .eq('file_hash', fileHash)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingMedia) {
+    // If it exists, skip uploading and just return the existing record!
+    return existingMedia;
+  }
+
+  // 4. Upload to storage
   const uploaded = await uploadImage(buffer, mimeType, newFilename);
 
-  // 4. Create media_library record
+  // 5. Create media_library record
   const mediaRecord = {
     filename: params.filename || uploaded.filename,
     url: uploaded.url,
@@ -64,6 +83,7 @@ export async function uploadToMediaLibrary(params: UploadMediaParams) {
     image_prompt: params.image_prompt || null,
     credits: params.credits || null,
     license_url: params.license_url || null,
+    file_hash: fileHash,
   };
 
   const { data: media, error: dbError } = await supabase

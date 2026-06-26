@@ -37,10 +37,26 @@ export async function updateSession(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     // Protect admin routes
-    if (request.nextUrl.pathname.startsWith('/admin') && !user) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/login';
-      return NextResponse.redirect(url);
+    if (request.nextUrl.pathname.startsWith('/admin')) {
+      if (!user) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/login';
+        return NextResponse.redirect(url);
+      }
+
+      // Verify user is in admins table
+      const { data: admin } = await supabase
+        .from('admins')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!admin) {
+        // Logged in but not an admin
+        const url = request.nextUrl.clone();
+        url.pathname = '/login';
+        return NextResponse.redirect(url);
+      }
     }
   } catch (e) {
     // If Supabase auth fails (e.g. network error), don't block the request

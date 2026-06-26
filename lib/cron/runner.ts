@@ -146,20 +146,145 @@ const handleRefreshSitemap: JobHandler = async () => {
 /**
  * SEO audit placeholder.
  */
-const handleSeoAudit: JobHandler = async () => {
+const handleSeoAudit: JobHandler = async (_job, supabase) => {
+  // 1. Fetch published pages
+  const { data: blogs } = await supabase.from('blogs').select('id, slug, title, meta_title, meta_description').eq('published', true);
+  const { data: industries } = await supabase.from('industries').select('id, slug, name, meta_title, meta_description').eq('published', true);
+  
+  if (!blogs && !industries) {
+    return { success: true, result: { message: 'No published pages found to audit.' } };
+  }
+
+  let issuesFound = 0;
+  const auditsToInsert: any[] = [];
+
+  const auditPage = (url: string, pageType: string, metaTitle: string | null, metaDesc: string | null) => {
+    let score = 100;
+    const issues: string[] = [];
+
+    if (!metaTitle) {
+      score -= 30;
+      issues.push('Missing Meta Title');
+    } else if (metaTitle.length < 30 || metaTitle.length > 60) {
+      score -= 10;
+      issues.push('Meta Title length is not optimal (should be 30-60 chars)');
+    }
+
+    if (!metaDesc) {
+      score -= 30;
+      issues.push('Missing Meta Description');
+    } else if (metaDesc.length < 120 || metaDesc.length > 160) {
+      score -= 10;
+      issues.push('Meta Description length is not optimal (should be 120-160 chars)');
+    }
+
+    if (issues.length > 0) {
+      issuesFound += issues.length;
+    }
+
+    auditsToInsert.push({
+      page_url: url,
+      page_type: pageType,
+      score,
+      issues,
+    });
+  };
+
+  (blogs || []).forEach(b => {
+    auditPage(`/blog/${b.slug}`, 'blog', b.meta_title || b.title, b.meta_description);
+  });
+
+  (industries || []).forEach(i => {
+    auditPage(`/industries/${i.slug}`, 'industry', i.meta_title || i.name, i.meta_description);
+  });
+
+  if (auditsToInsert.length === 0) {
+    return { success: true, result: { message: 'No pages to insert for audit.' } };
+  }
+
+  // Clear previous audits to keep the table fresh
+  await supabase.from('seo_audits').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  
+  const { error: insertError } = await supabase.from('seo_audits').insert(auditsToInsert);
+
+  if (insertError) {
+    return { success: false, error: `Failed to insert SEO audits: ${insertError.message}` };
+  }
+
   return {
     success: true,
-    result: { message: 'SEO audit queued successfully.' },
+    result: { message: `SEO audit completed. Audited ${auditsToInsert.length} pages, found ${issuesFound} issues.` },
   };
 };
 
 /**
  * Cleanup orphaned media (placeholder for future implementation).
  */
-const handleCleanupMedia: JobHandler = async () => {
+const handleCleanupMedia: JobHandler = async (_job, supabase) => {
+  // 1. Fetch all media in the library
+  const { data: media } = await supabase.from('media_library').select('id, url, filename');
+  
+  if (!media || media.length === 0) {
+    return { success: true, result: { message: 'No media found to cleanup.' } };
+  }
+
+  // 2. Fetch all references
+  const { data: blogs } = await supabase.from('blogs').select('thumbnail, content');
+  const { data: industries } = await supabase.from('industries').select('image_url, icon, og_image');
+  const { data: services } = await supabase.from('services').select('icon, og_image');
+
+  // Build a set of all used URLs
+  const usedUrls = new Set<string>();
+
+  const extractUrls = (content: string | null) => {
+    if (!content) return;
+    const urlRegex = /https?:\/\/[^\s"'<>]+/g;
+    const matches = content.match(urlRegex) || [];
+    matches.forEach(m => usedUrls.add(m));
+  };
+
+  (blogs || []).forEach(b => {
+    if (b.thumbnail) usedUrls.add(b.thumbnail);
+    extractUrls(b.content);
+  });
+
+  (industries || []).forEach(i => {
+    if (i.image_url) usedUrls.add(i.image_url);
+    if (i.icon) usedUrls.add(i.icon);
+    if (i.og_image) usedUrls.add(i.og_image);
+  });
+
+  (services || []).forEach(s => {
+    if (s.icon) usedUrls.add(s.icon);
+    if (s.og_image) usedUrls.add(s.og_image);
+  });
+
+  // 3. Find orphaned media
+  const orphaned = media.filter(m => !usedUrls.has(m.url));
+
+  if (orphaned.length === 0) {
+    return { success: true, result: { message: 'No orphaned media found.' } };
+  }
+
+  // 4. Delete orphaned records from DB
+  const orphanedIds = orphaned.map(o => o.id);
+  const { error: deleteDbError } = await supabase.from('media_library').delete().in('id', orphanedIds);
+
+  if (deleteDbError) {
+    return { success: false, error: `Failed to delete from DB: ${deleteDbError.message}` };
+  }
+
+  // 5. Delete from storage bucket
+  const orphanedFilenames = orphaned.map(o => o.filename);
+  const { error: storageError } = await supabase.storage.from('media').remove(orphanedFilenames);
+
+  if (storageError) {
+    return { success: false, error: `Failed to delete from Storage: ${storageError.message}` };
+  }
+
   return {
     success: true,
-    result: { message: 'Media cleanup completed.' },
+    result: { message: `Cleaned up ${orphaned.length} orphaned media files.` },
   };
 };
 
@@ -220,41 +345,33 @@ export async function runAllActiveJobs(): Promise<Array<{ jobName: string; statu
   }
 
   const results: Array<{ jobName: string; status: string }> = [];
+  const APP_URL = process.env.APP_URL || 'http://localhost:3000';
+  const CRON_SECRET = process.env.CRON_SECRET || 'vakeel-dev-cron-secret-2026';
 
-  for (const job of jobs) {
-    const startedAt = new Date().toISOString();
-    const startMs = Date.now();
+  const dispatchPromises = jobs.map(async (job) => {
+    try {
+      const res = await fetch(`${APP_URL}/api/cron/worker`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${CRON_SECRET}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ job_id: job.id }),
+      });
+      
+      results.push({
+        jobName: job.name as string,
+        status: res.ok ? 'dispatched' : 'dispatch_failed',
+      });
+    } catch (err) {
+      results.push({
+        jobName: job.name as string,
+        status: 'dispatch_failed',
+      });
+    }
+  });
 
-    const execution = await executeJob(job as CronJob, supabase);
-
-    const completedAt = new Date().toISOString();
-    const durationMs = Date.now() - startMs;
-
-    // Log the run
-    await supabase.from('cron_logs').insert([{
-      cron_job_id: job.id,
-      status: execution.success ? 'success' : 'failed',
-      result: execution.result || { error: execution.error },
-      started_at: startedAt,
-      completed_at: completedAt,
-      duration_ms: durationMs,
-      retries: execution.retries || 0,
-      blog_id: execution.blogId || null,
-      image_source: execution.imageSource || null,
-      error_message: execution.error || null,
-    }]);
-
-    // Update job metadata
-    await supabase.from('cron_jobs').update({
-      last_run_at: completedAt,
-      last_status: execution.success ? 'success' : 'failed',
-    }).eq('id', job.id);
-
-    results.push({
-      jobName: job.name,
-      status: execution.success ? 'success' : 'failed',
-    });
-  }
+  await Promise.allSettled(dispatchPromises);
 
   return results;
 }

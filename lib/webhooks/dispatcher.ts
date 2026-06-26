@@ -1,8 +1,10 @@
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { WebhookEvent, WebhookPayload } from './events';
+import crypto from 'crypto';
 
 const RETRY_DELAYS = [2000, 5000, 10000]; // Exponential backoff
 const MAX_RETRIES = 3;
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'vakeel-webhook-secret-2026';
 
 /**
  * Send a single webhook with retry logic.
@@ -18,6 +20,10 @@ async function sendWithRetry(
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const customHeaders = webhook.headers || {};
+      const payloadString = JSON.stringify(payload);
+      
+      // Calculate HMAC-SHA256 signature for payload verification
+      const signature = crypto.createHmac('sha256', WEBHOOK_SECRET).update(payloadString).digest('hex');
 
       const res = await fetch(webhook.url, {
         method: 'POST',
@@ -25,9 +31,10 @@ async function sendWithRetry(
           'Content-Type': 'application/json',
           'User-Agent': 'Vakeel-Webhook-Dispatcher/1.0',
           'X-Webhook-Attempt': String(attempt),
+          'X-Vakeel-Signature': signature,
           ...customHeaders,
         },
-        body: JSON.stringify(payload),
+        body: payloadString,
       });
 
       lastStatus = res.status;
@@ -51,12 +58,30 @@ async function sendWithRetry(
       // 2xx = success, stop retrying
       if (res.ok) return;
 
-      // 4xx errors (except 429) = client error, don't retry
-      if (res.status >= 400 && res.status < 500 && res.status !== 429) return;
+      // 4xx errors (except 429) = client error, don't retry (Permanent Failure)
+      if (res.status >= 400 && res.status < 500 && res.status !== 429) {
+        await supabase.from('webhook_logs').insert([{
+          webhook_id: webhook.id,
+          event_type: payload.event,
+          payload,
+          response_status: -1,
+          response_body: `DLQ (Client Error): Status ${res.status}. Body: ${lastBody.slice(0, 500)}`,
+        }]);
+        return;
+      }
 
       // 429 or 5xx = retry after delay
       if (attempt < MAX_RETRIES) {
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt - 1] || 10000));
+      } else {
+        // Exhausted all retries (Permanent Failure)
+        await supabase.from('webhook_logs').insert([{
+          webhook_id: webhook.id,
+          event_type: payload.event,
+          payload,
+          response_status: -1,
+          response_body: `DLQ (Retries Exhausted): Last Status ${res.status}. Body: ${lastBody.slice(0, 500)}`,
+        }]);
       }
     } catch (networkErr: unknown) {
       const errMsg = networkErr instanceof Error ? networkErr.message : 'Network Error';
@@ -77,6 +102,15 @@ async function sendWithRetry(
 
       if (attempt < MAX_RETRIES) {
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt - 1] || 10000));
+      } else {
+        // Exhausted all retries (Network Error)
+        await supabase.from('webhook_logs').insert([{
+          webhook_id: webhook.id,
+          event_type: payload.event,
+          payload,
+          response_status: -1,
+          response_body: `DLQ (Network Error): ${errMsg}`,
+        }]);
       }
     }
   }

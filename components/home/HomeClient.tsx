@@ -697,21 +697,36 @@ const STAGGER: Variants = {
 
 // ─── Animated counter ─────────────────────────────────────────────────────────
 function useAnimatedCounter(target: number, duration = 2000) {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
+  
   useEffect(() => {
-    if (!isInView) return;
-    let start = 0;
-    const step = Math.ceil(target / (duration / 16));
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= target) { setCount(target); clearInterval(timer); }
-      else setCount(start);
-    }, 16);
-    return () => clearInterval(timer);
+    if (!isInView || !ref.current) return;
+    
+    let startTimestamp: number | null = null;
+    let animationFrameId: number;
+    const node = ref.current;
+    
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      
+      // Use easeOut-like curve for smoother ending
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      node.textContent = Math.floor(easeProgress * target).toLocaleString();
+      
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(step);
+      } else {
+        node.textContent = target.toLocaleString();
+      }
+    };
+    
+    animationFrameId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(animationFrameId);
   }, [isInView, target, duration]);
-  return { count, ref };
+  
+  return ref;
 }
 
 // ─── Helper: get section by key ───────────────────────────────────────────────
@@ -740,7 +755,7 @@ export default function HomeClient({ sections }: { sections: any[] }) {
   const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
   const scale = useTransform(scrollYProgress, [0, 1], [1, 0.95]);
 
-  const clients = useAnimatedCounter(50000);
+  const clientsRef = useAnimatedCounter(50000);
 
   const [testimonials, setTestimonials] = useState<any[]>([]);
   useEffect(() => {
@@ -851,7 +866,7 @@ export default function HomeClient({ sections }: { sections: any[] }) {
 
               <motion.div variants={FADE_UP} className="mt-14 flex flex-wrap items-center justify-center lg:justify-start gap-x-8 gap-y-4 text-sm font-semibold text-charcoal/50 uppercase tracking-wider">
                 <div className="flex items-center gap-2.5"><ShieldCheck className="w-5 h-5 text-sage" /> SOC2 Compliant</div>
-                <div ref={clients.ref} className="flex items-center gap-2.5"><CheckCircle2 className="w-5 h-5 text-sage" /> {clients.count.toLocaleString()}+ Founders</div>
+                <div className="flex items-center gap-2.5"><CheckCircle2 className="w-5 h-5 text-sage" /> <span ref={clientsRef}>0</span>+ Founders</div>
               </motion.div>
             </motion.div>
 

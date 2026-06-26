@@ -25,20 +25,25 @@ import {
 export default async function AutomationPage() {
   const supabase = await createClient();
 
+  // Date 30 days ago
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const thirtyDaysAgoStr = thirtyDaysAgo.toISOString();
+
   // Fetch stats in parallel
   const [
-    { count: totalBlogs },
-    { count: draftCount },
-    { count: publishedToday },
+    { count: aiBlogsCount },
+    { data: recentCronLogs },
+    { data: recentWebhookLogs },
     { data: lastGenerated },
     { data: recentLogs },
     { data: cronJobs },
   ] = await Promise.all([
-    supabase.from('blogs').select('*', { count: 'exact', head: true }),
-    supabase.from('blogs').select('*', { count: 'exact', head: true }).eq('status', 'draft'),
-    supabase.from('blogs').select('*', { count: 'exact', head: true })
-      .eq('published', true)
-      .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
+    supabase.from('cron_logs').select('id', { count: 'exact', head: true })
+      .eq('status', 'success')
+      .not('blog_id', 'is', null),
+    supabase.from('cron_logs').select('status').gte('started_at', thirtyDaysAgoStr),
+    supabase.from('webhook_logs').select('response_status').gte('created_at', thirtyDaysAgoStr),
     supabase.from('blogs').select('id, title, slug, status, created_at, thumbnail')
       .order('created_at', { ascending: false }).limit(1).single(),
     supabase.from('cron_logs').select('*, cron_jobs(name, job_type)')
@@ -48,6 +53,14 @@ export default async function AutomationPage() {
 
   const activeJobs = (cronJobs || []).filter((j: Record<string, unknown>) => j.active).length;
   const failedJobs = (cronJobs || []).filter((j: Record<string, unknown>) => j.last_status === 'failed').length;
+
+  const cronTotal = recentCronLogs?.length || 0;
+  const cronSuccess = recentCronLogs?.filter(l => l.status === 'success').length || 0;
+  const cronSuccessRate = cronTotal > 0 ? Math.round((cronSuccess / cronTotal) * 100) : 100;
+
+  const webhookTotal = recentWebhookLogs?.length || 0;
+  const webhookSuccess = recentWebhookLogs?.filter(l => l.response_status >= 200 && l.response_status < 300).length || 0;
+  const webhookSuccessRate = webhookTotal > 0 ? Math.round((webhookSuccess / webhookTotal) * 100) : 100;
 
   return (
     <div>
@@ -87,8 +100,8 @@ export default async function AutomationPage() {
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-charcoal">{totalBlogs ?? 0}</p>
-              <p className="text-xs text-gray-500 font-medium">Total Blogs</p>
+              <p className="text-2xl font-bold text-charcoal">{aiBlogsCount ?? 0}</p>
+              <p className="text-xs text-gray-500 font-medium">AI Blogs Generated</p>
             </div>
           </div>
         </Card>
@@ -96,11 +109,11 @@ export default async function AutomationPage() {
         <Card className="p-5 border-gray-200 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
-              <Clock className="w-5 h-5" />
+              <CheckCircle2 className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-charcoal">{draftCount ?? 0}</p>
-              <p className="text-xs text-gray-500 font-medium">Pending Drafts</p>
+              <p className="text-2xl font-bold text-charcoal">{cronSuccessRate}%</p>
+              <p className="text-xs text-gray-500 font-medium">Cron Success (30d)</p>
             </div>
           </div>
         </Card>
@@ -108,11 +121,11 @@ export default async function AutomationPage() {
         <Card className="p-5 border-gray-200 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5" />
+              <Activity className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-charcoal">{publishedToday ?? 0}</p>
-              <p className="text-xs text-gray-500 font-medium">Published Today</p>
+              <p className="text-2xl font-bold text-charcoal">{webhookSuccessRate}%</p>
+              <p className="text-xs text-gray-500 font-medium">Webhook Delivery</p>
             </div>
           </div>
         </Card>
@@ -120,7 +133,7 @@ export default async function AutomationPage() {
         <Card className="p-5 border-gray-200 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
-              <Activity className="w-5 h-5" />
+              <Clock className="w-5 h-5" />
             </div>
             <div>
               <p className="text-2xl font-bold text-charcoal">{activeJobs}/{(cronJobs || []).length}</p>
