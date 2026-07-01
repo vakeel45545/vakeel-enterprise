@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createNavigation, updateNavigation } from '@/app/admin/actions';
@@ -450,7 +452,7 @@ export default function NavigationForm({ item, allItems = [], mode }: Navigation
                   />
                   {featuredData.image && (
                     <div className="mt-2 relative h-24 w-full rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
-                      <img src={featuredData.image} alt="preview" className="w-full h-full object-cover opacity-70" />
+                      <Image src={featuredData.image} alt="preview" fill className="object-cover opacity-70" />
                     </div>
                   )}
                 </div>

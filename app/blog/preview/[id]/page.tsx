@@ -101,7 +101,7 @@ export default async function BlogPreviewPage({ params }: { params: Promise<{ id
             <div className="flex flex-wrap items-center gap-6 text-charcoal/45 text-sm font-semibold mb-12 border-b border-charcoal/[0.06] pb-6 uppercase tracking-wider">
               <div className="flex items-center gap-2">
                 {blog?.author?.avatar ? (
-                  <img src={blog.author.avatar} alt={blog.author.name} className="w-6 h-6 rounded-full object-cover shadow-sm" />
+                  <Image src={blog.author.avatar} alt={blog.author.name} width={24} height={24} className="w-6 h-6 rounded-full object-cover shadow-sm" />
                 ) : (
                   <div className="w-6 h-6 rounded-full bg-sage/20 flex items-center justify-center text-sage font-bold text-xs shadow-sm">
                     {blog?.author?.name?.charAt(0) || 'V'}
@@ -111,7 +111,7 @@ export default async function BlogPreviewPage({ params }: { params: Promise<{ id
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-sage" />
-                {new Date(blog.created_at || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                {new Date(blog.created_at || new Date(0).getTime()).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
               </div>
               {blog.reading_time && (
                 <div className="flex items-center gap-2">

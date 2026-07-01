@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,11 +27,7 @@ export function MediaSelector({ onSelect, onClose, resourceType = 'image' }: Med
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchAssets();
-  }, [resourceType]); // Fetch on mount
-
-  const fetchAssets = async (searchQuery: string = '') => {
+  const fetchAssets = useCallback(async (searchQuery: string = '') => {
     setLoading(true);
     let dbQuery = supabase
       .from('media_library')
@@ -46,7 +42,12 @@ export function MediaSelector({ onSelect, onClose, resourceType = 'image' }: Med
     const { data } = await dbQuery.order('created_at', { ascending: false }).limit(20);
     setAssets(data || []);
     setLoading(false);
-  };
+  }, [resourceType, supabase]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchAssets();
+  }, [fetchAssets]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

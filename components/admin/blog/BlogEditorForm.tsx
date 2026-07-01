@@ -214,7 +214,7 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
   const [showImagePicker, setShowImagePicker] = useState(false);
 
   // Image preview
-  const [thumbnailPreview, setThumbnailPreview] = useState(blog?.thumbnail ?? '');
+  const thumbnailPreview = thumbnail;
 
   // Outline modal
   const [outlineModal, setOutlineModal] = useState(false);
@@ -252,9 +252,7 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
   };
 
   // Thumbnail preview sync
-  useEffect(() => {
-    setThumbnailPreview(thumbnail);
-  }, [thumbnail]);
+  // (Derived directly from state, no useEffect needed)
 
   // Quality score (live)
   const quality = computeQualityScore(content, title, metaTitle, metaDesc, tags);
@@ -393,7 +391,6 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
       const data = await aiFetchWithRetry('/api/ai/generate-image', { topic }, 'image');
       if (!data) return;
       setThumbnail(data.imageUrl ?? thumbnail);
-      setThumbnailPreview(data.imageUrl ?? thumbnailPreview);
       setStatusImage('success');
       setTimeout(() => setStatusImage('idle'), 3000);
     } catch (err) {
@@ -681,7 +678,7 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <button type="button" onClick={() => { setThumbnail(''); setThumbnailPreview(''); }} className="p-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors">
+                    <button type="button" onClick={() => { setThumbnail(''); }} className="p-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -711,7 +708,6 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
                         currentUrl={thumbnail}
                         onSelect={(mediaId, url) => {
                           setThumbnail(url);
-                          setThumbnailPreview(url);
                           // Auto-fill og_image if empty
                           if (!ogImage) {
                             setOgImage(url);
@@ -966,7 +962,7 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
                     {thumbnailPreview && (
                       <div className="rounded-lg overflow-hidden border border-gray-200">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={thumbnailPreview} alt="Preview" className="w-full h-24 object-cover" onError={() => setThumbnailPreview('')} />
+                        <img src={thumbnailPreview} alt="Preview" className="w-full h-24 object-cover" onError={() => setThumbnail('')} />
                       </div>
                     )}
                     <p className="text-xs text-gray-400">Image will be saved to thumbnail field</p>

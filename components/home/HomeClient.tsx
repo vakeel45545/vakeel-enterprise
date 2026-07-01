@@ -1027,7 +1027,7 @@ export default function HomeClient({ sections }: { sections: any[] }) {
                 <div className="relative z-20">
                   <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-[1.25rem] bg-white/5 border border-white/10 flex items-center justify-center mb-8 shadow-inner"><Scale className="w-7 h-7 lg:w-8 lg:h-8 text-amber" /></div>
                   <h3 className="text-3xl font-display font-bold mb-4 tracking-tight">IP Protection</h3>
-                  <p className="text-white/60 mb-10 text-lg leading-relaxed">Protect your brand's identity, logos, and inventions globally in one click.</p>
+                  <p className="text-white/60 mb-10 text-lg leading-relaxed">Protect your brand&apos;s identity, logos, and inventions globally in one click.</p>
                 </div>
                 <Link href="#" className="relative z-20 inline-flex items-center text-sm font-bold text-amber border border-amber/20 bg-amber/10 px-6 py-3.5 rounded-xl hover:bg-amber/20 transition-all w-max group/link">
                   Protect brand <ArrowRight className="ml-1.5 w-4 h-4 group-hover/link:translate-x-1 transition-transform" />

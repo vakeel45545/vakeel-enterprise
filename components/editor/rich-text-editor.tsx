@@ -60,6 +60,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
           }
         }
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Debounced autosave

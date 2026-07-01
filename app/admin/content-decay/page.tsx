@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fetchDecayingContent, runAnalysisAction, triggerAiRefresh } from './actions';
 import { format } from 'date-fns';
 import { RefreshCw, Activity, AlertTriangle, Search, Zap } from 'lucide-react';
@@ -13,16 +13,17 @@ export default function ContentDecayPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     const data = await fetchDecayingContent();
     setContent(data);
     setIsLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadData();
+  }, [loadData]);
 
   const handleRunAnalysis = async () => {
     setIsAnalyzing(true);

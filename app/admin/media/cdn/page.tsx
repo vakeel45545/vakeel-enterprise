@@ -106,7 +106,7 @@ export default async function CDNDashboard() {
                 <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
                 <div>
                   <h4 className="font-bold text-charcoal text-sm">f_auto (Auto-Format)</h4>
-                  <p className="text-xs text-gray-500 mt-1">Automatically serves WebP or AVIF based on the user's browser support, saving up to 40% bandwidth.</p>
+                  <p className="text-xs text-gray-500 mt-1">Automatically serves WebP or AVIF based on the user&apos;s browser support, saving up to 40% bandwidth.</p>
                 </div>
               </div>
             </div>

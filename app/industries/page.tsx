@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { getIndustries } from '@/lib/api/industries';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, Building2, Globe } from 'lucide-react';
 import { BreadcrumbSchema } from '@/components/seo/BreadcrumbSchema';
 
@@ -58,10 +59,12 @@ export default async function IndustriesPage() {
                 >
                   <div className="relative h-48 w-full bg-charcoal/5 overflow-hidden">
                     {industry.image_url ? (
-                      <img
+                      <Image
                         src={industry.image_url}
                         alt={industry.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-700"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-sage/5 text-sage/40">

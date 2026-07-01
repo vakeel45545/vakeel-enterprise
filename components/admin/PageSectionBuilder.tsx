@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import React, { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Plus, Trash2, Eye, EyeOff, ChevronUp, ChevronDown,
@@ -261,7 +261,6 @@ function SectionCard({
   onToggleVisible: () => void;
 }) {
   const [expanded, setExpanded] = useState(true);
-  const Icon = getSectionIcon(section.section_key);
   const colorClass = getSectionColor(section.section_key);
   const sectionDef = SECTION_TYPES.find(t => t.key === section.section_key);
 
@@ -285,7 +284,7 @@ function SectionCard({
       <div className="flex items-center gap-3 px-4 py-3 bg-gray-50/80 border-b border-gray-100">
         <GripVertical className="w-4 h-4 text-gray-300 shrink-0" />
         <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${colorClass} shrink-0`}>
-          <Icon className="w-3.5 h-3.5" />
+          {React.createElement(getSectionIcon(section.section_key), { className: "w-3.5 h-3.5" })}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">

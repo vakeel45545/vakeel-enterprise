@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import Image from 'next/image';
 import { getServiceIndustryPage } from '@/lib/api/industries';
 import Link from 'next/link';
 import { ArrowRight, ChevronRight, CheckCircle2 } from 'lucide-react';
@@ -58,7 +59,7 @@ export default async function ServiceIndustryPage({ params }: { params: Promise<
         {industry.image_url && (
           <div className="absolute inset-0 z-0">
             <div className="absolute inset-0 bg-charcoal/80 mix-blend-multiply z-10" />
-            <img src={industry.image_url} alt={industry.name} className="w-full h-full object-cover opacity-30" />
+            <Image src={industry.image_url} alt={industry.name} fill className="object-cover opacity-30" />
           </div>
         )}
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-sage/[0.15] rounded-full blur-[120px] pointer-events-none animate-pulse-glow z-10" />

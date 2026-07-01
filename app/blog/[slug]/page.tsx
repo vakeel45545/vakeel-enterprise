@@ -121,7 +121,7 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
                 <div className="flex flex-wrap items-center gap-6 text-charcoal/45 text-sm font-semibold mb-12 border-b border-charcoal/[0.06] pb-6 uppercase tracking-wider">
                   <div className="flex items-center gap-2">
                     {blog?.author?.avatar ? (
-                      <img src={blog.author.avatar} alt={blog.author.name} className="w-6 h-6 rounded-full object-cover shadow-sm" />
+                      <Image src={blog.author.avatar} alt={blog.author.name} width={24} height={24} className="w-6 h-6 rounded-full object-cover shadow-sm" />
                     ) : (
                       <div className="w-6 h-6 rounded-full bg-charcoal/10 flex items-center justify-center text-[10px] text-charcoal">
                         {blog?.author?.name?.[0] || 'V'}
@@ -131,7 +131,7 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-sage" />
-                    {new Date(blog.created_at || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    {new Date(blog.created_at || new Date(0).getTime()).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </div>
                   {blog.reading_time ? (
                     <div className="flex items-center gap-2">
@@ -250,7 +250,7 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
                 <article key={related.id} className="group bg-white rounded-[2rem] border border-charcoal/5 shadow-sm hover:shadow-premium-hover transition-all duration-500 hover:-translate-y-2 overflow-hidden">
                   {related.thumbnail && (
                     <div className="h-40 overflow-hidden">
-                      <img src={related.thumbnail} alt={related.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                      <Image src={related.thumbnail} alt={related.title} width={400} height={250} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                     </div>
                   )}
                   <div className="p-6">

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Edit, Trash2, Globe, Eye, EyeOff } from 'lucide-react';
@@ -45,9 +46,11 @@ export default async function AdminIndustriesPage() {
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4 min-w-0">
                   {industry.image_url ? (
-                    <img
+                    <Image
                       src={industry.image_url}
                       alt={industry.name}
+                      width={56}
+                      height={56}
                       className="w-14 h-14 rounded-xl object-cover border border-charcoal/5"
                     />
                   ) : (

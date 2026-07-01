@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { getBlogs, getDistinctBlogCategories } from '@/lib/api/services';
 import { generateSEOMetadata } from '@/lib/seo/generateMetadata';
 import { Calendar, Tag, ArrowRight, BookOpen } from 'lucide-react';
@@ -38,7 +39,7 @@ export default async function BlogListingPage() {
             Blog & Legal <span className="text-sage italic">Guides</span>
           </h1>
           <p className="text-xl text-white/60 mb-10 leading-relaxed max-w-2xl mx-auto text-balance">
-            Expert insights on GST, company registration, trademarks, and compliance — written by India's leading legal professionals.
+            Expert insights on GST, company registration, trademarks, and compliance — written by India&apos;s leading legal professionals.
           </p>
 
           {/* Category Filter Pills */}
@@ -82,9 +83,11 @@ export default async function BlogListingPage() {
                 >
                   {blog.thumbnail && (
                     <div className="relative h-48 overflow-hidden">
-                      <img
+                      <Image
                         src={blog.thumbnail}
                         alt={blog.title}
+                        width={800}
+                        height={500}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                       />
                       {blog.category && (
@@ -117,7 +120,7 @@ export default async function BlogListingPage() {
                     <div className="flex items-center justify-between text-charcoal/40 text-xs font-semibold uppercase tracking-wider border-t border-charcoal/5 pt-4">
                       <div className="flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5" />
-                        {new Date(blog.created_at || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {new Date(blog.created_at || new Date(0).getTime()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </div>
                       <Link
                         href={`/blog/${blog.slug}`}

@@ -15,11 +15,14 @@ interface BlockEditorProps {
 
 export function BlockEditor({ name, defaultValue = '', placeholder = 'Start writing...' }: BlockEditorProps) {
   const [content, setContent] = useState(defaultValue);
+  const [prevDefaultValue, setPrevDefaultValue] = useState(defaultValue);
 
   // Sync state if default value changes from outside (like AI generation)
-  useEffect(() => {
+  // using the derived state pattern to avoid useEffect cascading renders.
+  if (defaultValue !== prevDefaultValue) {
+    setPrevDefaultValue(defaultValue);
     setContent(defaultValue);
-  }, [defaultValue]);
+  }
 
   const modules = {
     toolbar: [

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { getBlogsByCategory, getDistinctBlogCategories } from '@/lib/api/services';
 import { generateCategorySEO } from '@/lib/seo/generateMetadata';
 import { BreadcrumbSchema } from '@/components/seo/BreadcrumbSchema';
@@ -79,9 +80,11 @@ export default async function BlogCategoryPage({ params }: Params) {
               >
                 {blog.thumbnail && (
                   <div className="relative h-48 overflow-hidden">
-                    <img
+                    <Image
                       src={blog.thumbnail}
                       alt={blog.title}
+                      width={800}
+                      height={500}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     />
                   </div>
@@ -96,7 +99,7 @@ export default async function BlogCategoryPage({ params }: Params) {
                   <div className="flex items-center justify-between text-charcoal/40 text-xs font-semibold uppercase tracking-wider border-t border-charcoal/5 pt-4">
                     <div className="flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5" />
-                      {new Date(blog.created_at || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {new Date(blog.created_at || new Date(0).getTime()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </div>
                     <Link
                       href={`/blog/${blog.slug}`}

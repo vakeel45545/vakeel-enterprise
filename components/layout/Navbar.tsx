@@ -45,6 +45,15 @@ export default function Navbar({ navItems, companyName = 'Vakeel' }: NavbarProps
   const scrollPositionRef = useRef(0);
 
   const pathname = usePathname();
+  const [prevPathname, setPrevPathname] = useState(pathname);
+
+  // Close menus on route change without cascading renders
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    setMobileMenuOpen(false);
+    setActiveDesktopMenu(null);
+    setActiveMobileMenu(null);
+  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -54,12 +63,7 @@ export default function Navbar({ navItems, companyName = 'Vakeel' }: NavbarProps
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close menus on route change
-  useEffect(() => {
-    setMobileMenuOpen(false);
-    setActiveDesktopMenu(null);
-    setActiveMobileMenu(null);
-  }, [pathname]);
+  // Route change handler moved to derived state logic above
 
   // Close menus on Escape key
   useEffect(() => {

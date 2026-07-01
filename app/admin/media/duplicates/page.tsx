@@ -49,7 +49,7 @@ export default async function DuplicateDashboard() {
             Duplicate Finder
           </h2>
           <p className="text-pink-700 mt-1 max-w-2xl text-sm">
-            We've scanned your entire media library using SHA-256 content hashing. 
+            We&apos;ve scanned your entire media library using SHA-256 content hashing. 
             Merging duplicates updates all blog/page references to point to the primary asset automatically, then safely deletes the redundant files to save storage.
           </p>
         </div>
