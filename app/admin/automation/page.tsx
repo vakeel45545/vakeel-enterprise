@@ -15,6 +15,7 @@ import {
   Play,
   Globe,
   Trash2,
+  Target,
 } from 'lucide-react';
 import {
   triggerBlogGeneration,
@@ -38,6 +39,12 @@ export default async function AutomationPage() {
     { data: lastGenerated },
     { data: recentLogs },
     { data: cronJobs },
+    { count: activeCampaignsCount },
+    // Queue Metrics
+    { count: pendingQueueCount },
+    { count: processingQueueCount },
+    { count: failedQueueCount },
+    { count: dlqCount },
   ] = await Promise.all([
     supabase.from('cron_logs').select('id', { count: 'exact', head: true })
       .eq('status', 'success')
@@ -49,6 +56,11 @@ export default async function AutomationPage() {
     supabase.from('cron_logs').select('*, cron_jobs(name, job_type)')
       .order('started_at', { ascending: false }).limit(10),
     supabase.from('cron_jobs').select('*').order('created_at', { ascending: false }),
+    supabase.from('campaigns').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+    supabase.from('campaign_topics').select('*', { count: 'exact', head: true }).in('status', ['pending', 'queued']),
+    supabase.from('campaign_topics').select('*', { count: 'exact', head: true }).eq('status', 'processing'),
+    supabase.from('campaign_topics').select('*', { count: 'exact', head: true }).eq('status', 'failed'),
+    supabase.from('campaign_topics').select('*', { count: 'exact', head: true }).eq('status', 'dead_letter'),
   ]);
 
   const activeJobs = (cronJobs || []).filter((j: Record<string, unknown>) => j.active).length;
@@ -142,6 +154,68 @@ export default async function AutomationPage() {
           </div>
         </Card>
       </div>
+
+      {/* Campaign Summary — NEW SECTION */}
+      <Card className="border-gray-200 shadow-sm overflow-hidden mb-6">
+        <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+          <h2 className="font-bold text-charcoal flex items-center gap-2">
+            <Target className="w-5 h-5 text-violet-600" />
+            Content Campaigns
+          </h2>
+          <Button asChild variant="outline" size="sm" className="rounded-lg text-xs">
+            <Link href="/admin/campaigns">Manage Campaigns</Link>
+          </Button>
+        </div>
+        <div className="p-5 flex items-center gap-6">
+          <div>
+            <p className="text-3xl font-bold text-charcoal">{activeCampaignsCount || 0}</p>
+            <p className="text-sm text-gray-500 font-medium">Active Campaigns</p>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm text-gray-600">
+              The Enterprise Content Operations Platform is now active. Campaigns have replaced the legacy job-centric workflow, enabling queue management, automatic retries, exponential backoff, and Cloudinary distribution for bulk content generation.
+            </p>
+          </div>
+          <Button asChild className="bg-violet-600 text-white hover:bg-violet-700 rounded-xl font-bold">
+            <Link href="/admin/campaigns/new">Create Campaign</Link>
+          </Button>
+        </div>
+      </Card>
+
+      {/* ── QUEUE MANAGER (NEW) ── */}
+      <Card className="border-gray-200 shadow-sm overflow-hidden mb-6">
+        <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+          <h2 className="font-bold text-charcoal flex items-center gap-2">
+            <Activity className="w-5 h-5 text-blue-600" />
+            Background Job Queue
+          </h2>
+        </div>
+        <div className="p-5 grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 text-center">
+            <p className="text-3xl font-bold text-gray-700">{pendingQueueCount || 0}</p>
+            <p className="text-xs text-gray-500 font-medium uppercase mt-1">Pending / Queued</p>
+          </div>
+          <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 text-center">
+            <p className="text-3xl font-bold text-blue-700">{processingQueueCount || 0}</p>
+            <p className="text-xs text-blue-500 font-medium uppercase mt-1">Processing</p>
+          </div>
+          <div className="bg-amber-50 rounded-xl p-4 border border-amber-100 text-center">
+            <p className="text-3xl font-bold text-amber-700">{failedQueueCount || 0}</p>
+            <p className="text-xs text-amber-500 font-medium uppercase mt-1">Failed (Will Retry)</p>
+          </div>
+          <div className="bg-red-50 rounded-xl p-4 border border-red-100 text-center flex flex-col justify-between items-center">
+            <div>
+              <p className="text-3xl font-bold text-red-700">{dlqCount || 0}</p>
+              <p className="text-xs text-red-500 font-medium uppercase mt-1">Dead Letter Queue</p>
+            </div>
+          </div>
+        </div>
+        {(failedQueueCount || 0) > 0 && (
+          <div className="p-4 bg-amber-50 border-t border-amber-100 flex items-center justify-between">
+            <p className="text-sm text-amber-800">Jobs in the Failed state will be automatically retried by the exponential backoff engine.</p>
+          </div>
+        )}
+      </Card>
 
       {/* Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

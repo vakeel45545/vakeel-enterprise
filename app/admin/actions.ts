@@ -5,6 +5,7 @@ import type { Database } from '@/lib/supabase/database.types';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { dispatchWebhook } from '@/lib/webhooks/dispatcher';
+import { trackFieldReference, scanAndTrackInlineImages, removeUsage } from '@/lib/media/usage';
 
 // ─────────────────────────────────────────────
 // SERVICES
@@ -22,7 +23,7 @@ export async function createService(formData: FormData) {
   const processStepsRaw = formData.get('process_steps') as string;
   const sectionsRaw = formData.get('sections') as string;
 
-  const data: Database['public']['Tables']['services']['Insert'] = {
+  const data: any = {
     title,
     slug,
     hero_title: formData.get('hero_title') as string || null,
@@ -42,7 +43,7 @@ export async function createService(formData: FormData) {
     benefits: benefitsRaw ? JSON.parse(benefitsRaw) : null,
     process_steps: processStepsRaw ? JSON.parse(processStepsRaw) : null,
     sections: sectionsRaw ? JSON.parse(sectionsRaw) : null,
-    published: formData.get('published') === 'on' || formData.get('published') === 'true',
+    status: (formData.get('status') as any) || 'draft',
     featured: formData.get('featured') === 'on' || formData.get('featured') === 'true',
   };
 
@@ -61,7 +62,7 @@ export async function updateService(id: string, formData: FormData) {
   const processStepsRaw = formData.get('process_steps') as string;
   const sectionsRaw = formData.get('sections') as string;
 
-  const data: Database['public']['Tables']['services']['Update'] = {
+  const data: any = {
     title: formData.get('title') as string,
     slug: formData.get('slug') as string,
     hero_title: formData.get('hero_title') as string || null,
@@ -81,7 +82,7 @@ export async function updateService(id: string, formData: FormData) {
     benefits: benefitsRaw ? JSON.parse(benefitsRaw) : null,
     process_steps: processStepsRaw ? JSON.parse(processStepsRaw) : null,
     sections: sectionsRaw ? JSON.parse(sectionsRaw) : null,
-    published: formData.get('published') === 'on' || formData.get('published') === 'true',
+    status: (formData.get('status') as any) || 'draft',
     featured: formData.get('featured') === 'on' || formData.get('featured') === 'true',
     updated_at: new Date().toISOString(),
   };
@@ -154,9 +155,17 @@ export async function createBlog(formData: FormData) {
   const supabase = await verifyAdminAndGetClient();
 
   const tagsRaw = formData.get('tags') as string;
-  const data: Database['public']['Tables']['blogs']['Insert'] = {
+  let slug = formData.get('slug') as string;
+
+  // Ensure slug is unique
+  const { data: existing } = await supabase.from('blogs').select('slug').eq('slug', slug).maybeSingle();
+  if (existing) {
+    slug = `${slug}-${Math.random().toString(36).substring(2, 6)}`;
+  }
+
+  const data: any = {
     title: formData.get('title') as string,
-    slug: formData.get('slug') as string,
+    slug: slug,
     category: formData.get('category') as string || null,
     thumbnail: formData.get('thumbnail') as string || null,
     og_image: formData.get('og_image') as string || null,
@@ -166,7 +175,7 @@ export async function createBlog(formData: FormData) {
     author_id: formData.get('author_id') as string || null,
     tags: tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : null,
     reading_time: parseInt(formData.get('reading_time') as string) || null,
-    published: formData.get('published') === 'on' || formData.get('published') === 'true',
+    status: (formData.get('status') as any) || 'draft',
     featured: formData.get('featured') === 'on' || formData.get('featured') === 'true',
   };
 
@@ -182,10 +191,17 @@ export async function createBlog(formData: FormData) {
   console.log("FEATURED IMAGE", formData.get("thumbnail"));
   console.log("OG IMAGE", formData.get("og_image"));
 
-  const { error } = await supabase.from('blogs').insert([data]);
+  const { data: inserted, error } = await supabase.from('blogs').insert([data]).select('id').single();
   if (error) throw new Error(error.message);
 
-  if (data.published) {
+  // Track media usage (non-blocking)
+  if (inserted?.id) {
+    if (data.thumbnail) trackFieldReference(data.thumbnail, 'blogs', inserted.id, 'thumbnail').catch(() => {});
+    if (data.og_image) trackFieldReference(data.og_image, 'blogs', inserted.id, 'og_image').catch(() => {});
+    if (data.content) scanAndTrackInlineImages(data.content, 'blogs', inserted.id).catch(() => {});
+  }
+
+  if (data.status === 'published') {
     dispatchWebhook('blog.published', data);
   }
 
@@ -198,9 +214,17 @@ export async function updateBlog(id: string, formData: FormData) {
   const supabase = await verifyAdminAndGetClient();
 
   const tagsRaw = formData.get('tags') as string;
-  const data: Database['public']['Tables']['blogs']['Update'] = {
+  let slug = formData.get('slug') as string;
+
+  // Ensure slug is unique for updates
+  const { data: existing } = await supabase.from('blogs').select('id').eq('slug', slug).maybeSingle();
+  if (existing && existing.id !== id) {
+    slug = `${slug}-${Math.random().toString(36).substring(2, 6)}`;
+  }
+
+  const data: any = {
     title: formData.get('title') as string,
-    slug: formData.get('slug') as string,
+    slug: slug,
     category: formData.get('category') as string || null,
     thumbnail: formData.get('thumbnail') as string || null,
     og_image: formData.get('og_image') as string || null,
@@ -210,7 +234,7 @@ export async function updateBlog(id: string, formData: FormData) {
     author_id: formData.get('author_id') as string || null,
     tags: tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : null,
     reading_time: parseInt(formData.get('reading_time') as string) || null,
-    published: formData.get('published') === 'on' || formData.get('published') === 'true',
+    status: (formData.get('status') as any) || 'draft',
     featured: formData.get('featured') === 'on' || formData.get('featured') === 'true',
     updated_at: new Date().toISOString(),
   };
@@ -221,7 +245,13 @@ export async function updateBlog(id: string, formData: FormData) {
   const { error } = await supabase.from('blogs').update(data).eq('id', id);
   if (error) throw new Error(error.message);
 
-  if (data.published) {
+  // Update media usage tracking (non-blocking)
+  removeUsage('blogs', id).catch(() => {}); // Clear old references
+  if (data.thumbnail) trackFieldReference(data.thumbnail, 'blogs', id, 'thumbnail').catch(() => {});
+  if (data.og_image) trackFieldReference(data.og_image, 'blogs', id, 'og_image').catch(() => {});
+  if (data.content) scanAndTrackInlineImages(data.content, 'blogs', id).catch(() => {});
+
+  if (data.status === 'published') {
     dispatchWebhook('blog.published', { id, ...data });
   }
 
@@ -233,6 +263,8 @@ export async function updateBlog(id: string, formData: FormData) {
 
 export async function deleteBlog(id: string) {
   const supabase = await verifyAdminAndGetClient();
+  // Clean up media usage before deleting
+  removeUsage('blogs', id).catch(() => {});
   const { error } = await supabase.from('blogs').delete().eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/blog');
@@ -256,7 +288,7 @@ export async function saveBlogDraft(formData: FormData): Promise<{ success: bool
       author_id: formData.get('author_id') as string || null,
       tags: tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : null,
       reading_time: parseInt(formData.get('reading_time') as string) || null,
-      published: formData.get('published') === 'on' || formData.get('published') === 'true',
+      status: formData.get('status') || 'draft',
       featured: formData.get('featured') === 'on' || formData.get('featured') === 'true',
     };
 

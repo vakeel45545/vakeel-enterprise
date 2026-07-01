@@ -28,6 +28,33 @@ export async function generateText(
 }
 
 /**
+ * Generate text content using Gemini Vision with an image.
+ */
+export async function generateVisionText(
+  prompt: string,
+  imageBuffer: Buffer,
+  mimeType: string,
+  options?: { responseMimeType?: string }
+): Promise<string> {
+  const response = await genAI.models.generateContent({
+    model: TEXT_MODEL,
+    contents: [
+      {
+        inlineData: {
+          data: imageBuffer.toString('base64'),
+          mimeType,
+        }
+      },
+      prompt
+    ],
+    config: options?.responseMimeType
+      ? { responseMimeType: options.responseMimeType }
+      : undefined,
+  });
+  return response.text ?? '';
+}
+
+/**
  * Parse a JSON block from Gemini's response text.
  * Strips markdown code fences if present, then finds the first valid JSON object.
  */

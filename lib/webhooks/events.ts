@@ -13,7 +13,8 @@ export type WebhookEvent =
   | 'cron.failed'
   | 'service.updated'
   | 'industry.updated'
-  | 'page.updated';
+  | 'page.updated'
+  | 'social.distribute';
 
 export interface WebhookPayload {
   event: WebhookEvent;

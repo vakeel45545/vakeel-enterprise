@@ -8,6 +8,7 @@
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { generateCompleteBlog, type BlogGenerationResult } from '@/lib/automation/blog-generator';
 import { revalidatePath } from 'next/cache';
+import { processCampaignBatch } from '../automation/campaign-runner';
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -266,25 +267,18 @@ const handleCleanupMedia: JobHandler = async (_job, supabase) => {
     return { success: true, result: { message: 'No orphaned media found.' } };
   }
 
-  // 4. Delete orphaned records from DB
-  const orphanedIds = orphaned.map(o => o.id);
-  const { error: deleteDbError } = await supabase.from('media_library').delete().in('id', orphanedIds);
+  // 4. Soft-delete orphaned assets via MediaService (provider-agnostic)
+  const { mediaService } = await import('@/lib/media/media-service');
+  let deletedCount = 0;
 
-  if (deleteDbError) {
-    return { success: false, error: `Failed to delete from DB: ${deleteDbError.message}` };
-  }
-
-  // 5. Delete from storage bucket
-  const orphanedFilenames = orphaned.map(o => o.filename);
-  const { error: storageError } = await supabase.storage.from('media').remove(orphanedFilenames);
-
-  if (storageError) {
-    return { success: false, error: `Failed to delete from Storage: ${storageError.message}` };
+  for (const orphan of orphaned) {
+    const success = await mediaService.softDelete(orphan.id);
+    if (success) deletedCount++;
   }
 
   return {
     success: true,
-    result: { message: `Cleaned up ${orphaned.length} orphaned media files.` },
+    result: { message: `Soft-deleted ${deletedCount} orphaned media files (out of ${orphaned.length} found).` },
   };
 };
 
@@ -299,6 +293,27 @@ const JOB_REGISTRY: Record<string, JobHandler> = {
   generate_sitemap: handleRefreshSitemap, // Alias
   seo_audit: handleSeoAudit,
   cleanup_media: handleCleanupMedia,
+  run_campaign: async (job, supabase) => {
+    const campaignId = job.config?.campaign_id as string;
+    if (!campaignId) {
+      // Find highest priority active campaign if none specified
+      const { data } = await supabase
+        .from('campaigns')
+        .select('id, topics_per_run')
+        .eq('status', 'active')
+        .order('priority', { ascending: true }) // assuming priority is a number or enum we can sort
+        .limit(1)
+        .single();
+        
+      if (data) {
+        const result = await processCampaignBatch(data.id, Number(data.topics_per_run) || 1);
+        return { success: true, result: { ...result } as Record<string, unknown> };
+      }
+      return { success: true, result: { message: 'No active campaigns found' } };
+    }
+    const result = await processCampaignBatch(campaignId, Number(job.config?.topics_per_run) || 1);
+    return { success: true, result: { ...result } as Record<string, unknown> };
+  }
 };
 
 // ─── Runner ─────────────────────────────────────────────

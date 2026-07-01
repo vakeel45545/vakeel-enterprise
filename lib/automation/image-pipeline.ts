@@ -10,14 +10,17 @@
  * This module adds server-side orchestration for cron/automation contexts.
  */
 
-import { uploadToMediaLibrary } from '@/lib/media/uploader';
+import { mediaService } from '@/lib/media/media-service';
 import { searchImages } from '@/lib/media/searchImages';
+import { uploadToMediaLibrary } from '@/lib/media/uploader';
 
 export interface AcquiredImage {
   url: string;
   mediaId: string | null;
   source: 'unsplash' | 'pexels' | 'ai_generated' | 'placeholder';
   alt: string;
+  cloudinaryUrl?: string;
+  cloudinaryPublicId?: string;
 }
 
 /**
@@ -27,6 +30,21 @@ export interface AcquiredImage {
  */
 export async function acquireFeaturedImage(topic: string): Promise<AcquiredImage> {
   try {
+    // 1. Search Universal Asset Manager first
+    const existingAssets = await mediaService.search(topic, { limit: 1 });
+    if (existingAssets && existingAssets.length > 0) {
+      const asset = existingAssets[0];
+      return {
+        url: asset.secureUrl || asset.url,
+        mediaId: asset.id,
+        source: (asset.source as AcquiredImage['source']) || 'ai_generated',
+        alt: asset.altText || topic,
+        cloudinaryUrl: asset.secureUrl,
+        cloudinaryPublicId: asset.publicId
+      };
+    }
+
+    // 2. Fallback to external search (Unsplash/Pexels/AI)
     const images = await searchImages(topic);
 
     if (images && images.length > 0) {
@@ -41,8 +59,8 @@ export async function acquireFeaturedImage(topic: string): Promise<AcquiredImage
           alt: selected.alt || topic,
         };
       }
-
-      // Remote image (Unsplash/Pexels) — download and store
+      // Remote image (Unsplash/Pexels) — download and store via MediaService pipeline
+      // This ensures: SHA256 dedup → CloudinaryProvider upload → DB insert → AI metadata
       try {
         const media = await uploadToMediaLibrary({
           url: selected.downloadUrl || selected.imageUrl || selected.url,

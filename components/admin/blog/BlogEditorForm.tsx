@@ -12,6 +12,7 @@ import { SEOValidator } from '@/components/admin/blog/SEOValidator';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { saveBlogDraft } from '@/app/admin/actions';
+import { EditorialStatusDropdown } from '@/components/admin/EditorialStatusDropdown';
 
 import {
   Eye,
@@ -59,7 +60,7 @@ interface Blog {
   tags?: string[] | null;
   author_id?: string | null;
   reading_time?: number | null;
-  published?: boolean | null;
+  status?: string | null;
   featured?: boolean | null;
 }
 
@@ -718,8 +719,9 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
                           setShowImagePicker(false);
                         }}
                         onInsert={(url, alt) => {
+                          // Ensure we use the latest editorRef methods
                           if (editorRef.current) {
-                            editorRef.current.insertAtCursor(`<img src="${url}" alt="${alt}" />`);
+                            editorRef.current.insertImage(url, alt);
                           }
                           setShowImagePicker(false);
                         }}
@@ -785,14 +787,18 @@ export function BlogEditorForm({ mode, authors, blog, action }: BlogEditorFormPr
           </div>
 
           {/* Publish / Featured toggles */}
-          <div className="flex gap-6">
+          <div className="flex flex-col gap-4 p-4 border border-gray-100 bg-gray-50/50 rounded-xl">
+            <div className="space-y-1">
+              <label className="text-sm font-semibold text-charcoal">Editorial Workflow Status</label>
+              <p className="text-xs text-gray-500 mb-2">Select the current stage of this document in the publication pipeline.</p>
+              <EditorialStatusDropdown currentStatus={(blog?.status as any) ?? 'draft'} />
+            </div>
+            
+            <div className="h-px bg-gray-200 w-full my-2"></div>
+            
             <label className="flex items-center gap-2 text-sm font-medium text-charcoal cursor-pointer">
-              <input type="checkbox" name="published" defaultChecked={blog?.published ?? false} className="w-4 h-4 rounded border-gray-300 text-sage" />
-              Published
-            </label>
-            <label className="flex items-center gap-2 text-sm font-medium text-charcoal cursor-pointer">
-              <input type="checkbox" name="featured" defaultChecked={blog?.featured ?? false} className="w-4 h-4 rounded border-gray-300 text-sage" />
-              Featured
+              <input type="checkbox" name="featured" defaultChecked={blog?.featured ?? false} className="w-4 h-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500" />
+              Mark as Featured Post
             </label>
           </div>
           </div>

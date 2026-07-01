@@ -85,7 +85,7 @@ export function ImagePicker({
 
       const result = await uploadMediaAction(formData) as any;
       if (result.success && result.media) {
-        finalUrl = result.media.url;
+        finalUrl = result.media.delivery_url || result.media.secure_url || result.media.url;
         finalId = result.media.id;
       } else {
         alert(`Failed to save image: ${result.error}`);

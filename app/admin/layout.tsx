@@ -1,7 +1,9 @@
 import Link from 'next/link';
-import { Settings, FileText, MapPin, Users, HelpCircle, LayoutDashboard, LogOut, Navigation, Menu, Footprints, BookOpen, Activity, Building2, Webhook, Clock, ImageIcon, Zap } from 'lucide-react';
+import { Settings, FileText, MapPin, Users, HelpCircle, LayoutDashboard, LogOut, Navigation, Menu, Footprints, BookOpen, Activity, Building2, Webhook, Clock, ImageIcon, Zap, PieChart } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { SidebarEnhancer } from '@/components/admin/SidebarEnhancer';
+import { Toaster } from 'sonner';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   let user = null;
@@ -32,6 +34,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { name: 'Webhooks', href: '/admin/webhooks', icon: Webhook },
     { name: 'Cron Jobs', href: '/admin/cron', icon: Clock },
     { name: 'Automation', href: '/admin/automation', icon: Zap },
+    { name: 'Analytics', href: '/admin/analytics', icon: PieChart },
     { name: 'System', href: '/admin/system', icon: Activity },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
@@ -53,7 +56,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className="text-xs text-white/50 mt-1 uppercase tracking-widest font-semibold">Enterprise Admin</div>
         </div>
 
-        <nav className="flex-1 py-6 px-4 space-y-1 overflow-y-auto">
+        <SidebarEnhancer />
+
+        <nav className="admin-sidebar-scroll flex-1 py-6 px-4 space-y-1 overflow-y-auto">
           {sidebarLinks.map((link) => (
             <Link
               key={link.name}
@@ -82,11 +87,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 min-h-screen overflow-x-hidden">
+      <main className="flex-1 min-h-screen overflow-x-hidden relative">
         <div className="p-6 md:p-10 max-w-7xl mx-auto">
           {children}
         </div>
       </main>
+      
+      <Toaster richColors position="top-right" />
     </div>
   );
 }
